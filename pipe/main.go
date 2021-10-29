@@ -5,75 +5,81 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
 func main() {
-	//done := make(chan struct{})
 
 	var isChild bool
 	env := os.Environ()
-	fmt.Println("check env.")
-	if env != nil && len(env[0]) > 4 {
 
+	//check env.
+	if env != nil && len(env[0]) > 4 {
 		if strings.HasPrefix(env[0], "STOP") {
 			isChild = true
 		}
 	}
 
-	fmt.Printf("isChild is %t\n", isChild)
-
-	var process *os.Process
+	var wg sync.WaitGroup
 	if !isChild {
+		fmt.Printf("#1 isChild is %t\n", isChild)
 		inR, inW, _ := os.Pipe()
 		outR, outW, _ := os.Pipe()
 
-		fmt.Println("#1 start process.")
-		process, _ = os.StartProcess(os.Args[0], os.Args[1:], &os.ProcAttr{
+		//#1 start process.
+		os.StartProcess(os.Args[0], os.Args[1:], &os.ProcAttr{
 			Files: []*os.File{os.Stdin, os.Stdout, os.Stderr, inW, outR},
 			Env:   []string{"STOP=START"},
 		})
 
-		fmt.Println("#1 write to outW.")
-		go writeTo(outW)
-		fmt.Println("#1 read from inR.")
-		readFrom(inR, process)
+		//#1 read from inR.
+		wg.Add(1)
+		go readFrom(inR, "#1 ", &wg)
+
+		//#1 write to outW.
+		writeTo(outW)
 
 	} else {
-		fmt.Println("#2 open inW.")
+		fmt.Printf("#2 isChild is %t\n", isChild)
+
+		//#2 open inW. TODO try to use the passed file instead
 		inW := os.NewFile(3, "inW")
 
-		fmt.Println("#2 open outR.")
+		//#2 open outR.
 		outR := os.NewFile(4, "outR")
 
-		fmt.Println("#2 write to inW.")
-		go writeTo(inW)
-		fmt.Println("#2 read from outR. ")
-		readFrom(outR, process)
+		//#2 read from outR.
+		wg.Add(1)
+		go readFrom(outR, "#2 ", &wg)
 
+		//#2 write to inW.
+		writeTo(inW)
 	}
+
+	wg.Wait()
 }
 
-func readFrom(pfile *os.File, process *os.Process) {
+func readFrom(pfile *os.File, prefix string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	scanner := bufio.NewScanner(pfile)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
-	/*
-		if process != nil {
-			process.Signal(os.Kill)
+	for i := 0; i < 3; i++ {
+		if scanner.Scan() {
+			fmt.Println(prefix + "receive: " + scanner.Text())
+		} else {
+			fmt.Println(prefix + scanner.Err().Error())
 		}
-	*/
-	//pfile.Close()
-	fmt.Println("finish")
+	}
+	fmt.Println(prefix + "finish")
+	// pfile.Close()
 }
 
 func writeTo(pfile *os.File) {
 	writer := bufio.NewWriter(pfile)
 	for i := 0; i < 3; i++ {
-		time.Sleep(time.Second)
-		writer.WriteString("date\n")
+		time.Sleep(time.Millisecond * 100)
+		writer.WriteString(time.Now().String() + "\n")
 		writer.Flush()
 	}
-	pfile.Close()
+	//pfile.Close()
 }
