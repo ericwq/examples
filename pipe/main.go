@@ -54,8 +54,8 @@ func main() {
 	}
 }
 
-func readFrom(outR *os.File, process *os.Process) {
-	scanner := bufio.NewScanner(outR)
+func readFrom(pfile *os.File, process *os.Process) {
+	scanner := bufio.NewScanner(pfile)
 	for scanner.Scan() {
 		fmt.Println(scanner.Text())
 	}
@@ -64,15 +64,16 @@ func readFrom(outR *os.File, process *os.Process) {
 			process.Signal(os.Kill)
 		}
 	*/
+	//pfile.Close()
 	fmt.Println("finish")
 }
 
-func writeTo(inW *os.File) {
-	writer := bufio.NewWriter(inW)
+func writeTo(pfile *os.File) {
+	writer := bufio.NewWriter(pfile)
 	for i := 0; i < 3; i++ {
 		time.Sleep(time.Second)
 		writer.WriteString("date\n")
 		writer.Flush()
 	}
-	inW.Close()
+	pfile.Close()
 }
