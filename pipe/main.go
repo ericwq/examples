@@ -65,7 +65,7 @@ func readFrom(pfile *os.File, prefix string, wg *sync.WaitGroup) {
 	scanner := bufio.NewScanner(pfile)
 	for i := 0; i < 3; i++ {
 		if scanner.Scan() {
-			fmt.Println(prefix + "receive: " + scanner.Text())
+			fmt.Printf("%s receive: %d %s\n", prefix, i, scanner.Text())
 		} else {
 			fmt.Println(prefix + scanner.Err().Error())
 		}
