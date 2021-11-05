@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,13 +12,29 @@ import (
 	"time"
 
 	"github.com/cloudflare/tableflip"
+	"golang.org/x/sys/unix"
 )
 
 // 当前程序的版本
 const version = "v0.0.1"
 
 func main() {
-	upg, err := tableflip.New(tableflip.Options{})
+	// 试试SO_REUSEPORT 的效果
+	var lc = &net.ListenConfig{
+		Control: func(network, address string, c syscall.RawConn) error {
+			var opErr error
+			if err := c.Control(func(fd uintptr) {
+				opErr = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+			}); err != nil {
+				return err
+			}
+			return opErr
+		},
+	}
+
+	upg, err := tableflip.New(tableflip.Options{
+		ListenConfig: lc,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -67,6 +84,7 @@ func main() {
 	if err := upg.Ready(); err != nil {
 		panic(err)
 	}
+	time.Sleep(time.Second * 5)
 	<-upg.Exit()
 
 	// 给老进程的退出设置一个 30s 的超时时间，保证老进程的退出
