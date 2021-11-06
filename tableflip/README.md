@@ -22,10 +22,6 @@ Run the following command to build the binaraies - new version.
 
 - `go build -o demo main.go`
 
-Run the following command to start the server - new version .
-
-- `./demo`
-
 Run the following command to restart the server with new version. Note that the [PID] should be replaced with the old version PID.
 
 - `kill -s HUP [PID]`
