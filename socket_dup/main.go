@@ -11,6 +11,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// 掩饰了，复制的listen socket 可以并行，轮流响应客户的请求。
+// 没有参数时，启动一个TCP服务，同时打开UnixSocket来监听请求
+// 带参数时，从UnixSocket获取信息，进行处理：启动TCP服务
+
 func main() {
 	tcpSrv := NewTcpSrv()
 	if len(os.Args) <= 1 {
@@ -159,7 +163,7 @@ func (t *TcpSrv) SendListenerWithUnixSocket() error {
 			rights := syscall.UnixRights(int(file.Fd()))
 			_, _, err = c.(*net.UnixConn).WriteMsgUnix(buf, rights, nil)
 			if err != nil {
-				fmt.Println("同步listen socket fail, err is", err.Error())
+				fmt.Println("synchronize listen socket fail, err is", err.Error())
 			}
 		}
 	}()
@@ -264,7 +268,7 @@ func (t *TcpSrv) SendConnWithUnixSocket() error {
 				rights := syscall.UnixRights(int(file.Fd()))
 				_, _, err = c.(*net.UnixConn).WriteMsgUnix(buf, rights, nil)
 				if err != nil {
-					fmt.Println("同步listen socket fail, err is", err.Error())
+					fmt.Println("synchronize listen socket fail, err is", err.Error())
 				}
 			}
 		}
