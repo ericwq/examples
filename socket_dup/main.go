@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// 掩饰了，复制的listen socket 可以并行，轮流响应客户的请求。
+// 程序验证，复制的listen socket 可以并行，轮流响应客户的请求。
 // 没有参数时，启动一个TCP服务，同时打开UnixSocket来监听请求
 // 带参数时，从UnixSocket获取信息，进行处理：启动TCP服务
 
