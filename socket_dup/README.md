@@ -4,6 +4,9 @@
 - [跨进程复制socket](https://cong.im/post/linux/%E8%B7%A8%E8%BF%9B%E7%A8%8B%E5%A4%8D%E5%88%B6socket/)
 - [Linux网络编程“惊群”问题总结](https://www.cnblogs.com/Anker/p/7071849.html)
 - [accept 与 epoll 惊群](https://pureage.info/2015/12/22/thundering-herd.html)
+- Advanced Programming in the UNIX Environment. 3rd Edition, Page 642, 17.4 Passing File Descriptors
+- UNIX Network Programming - The Sockets Networking API. Volume 1, 3rd Edition, Page 420, 15.7 Passing Descriptors
+- UNIX Network Programming - The Sockets Networking API. Volume 1, 3rd Edition, Page 829, 4.4 BSD Implementation
 
 # Demo steps
 
