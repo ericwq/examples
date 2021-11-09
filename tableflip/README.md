@@ -1,3 +1,7 @@
+# Reference
+
+-[Graceful shutdown of a TCP server in Go](https://eli.thegreenplace.net/2020/graceful-shutdown-of-a-tcp-server-in-go/)
+
 # Demo steps
 
 Run the following command to build the binaraies.
