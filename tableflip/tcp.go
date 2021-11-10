@@ -55,11 +55,19 @@ func Example_tcpServer() {
 	// Do an upgrade on SIGHUP
 	go func() {
 		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGHUP)
-		for range sig {
-			err := upg.Upgrade()
-			if err != nil {
-				log.Println("upgrade failed:", err)
+		signal.Notify(sig, syscall.SIGHUP, syscall.SIGUSR2)
+		for s := range sig {
+			switch s {
+			case syscall.SIGHUP:
+				//log.Println("got message SIGHUP.")
+				err := upg.Upgrade()
+				if err != nil {
+					log.Println("upgrade failed:", err)
+				}
+			case syscall.SIGUSR2:
+				//log.Println("got message SIGUSER2.")
+				upg.Stop()
+				return
 			}
 		}
 	}()
@@ -75,7 +83,7 @@ func Example_tcpServer() {
 	wg.Add(1)
 	go func() {
 		defer func() {
-			log.Println("return from main goroutine.")
+			//log.Println("stop listening.")
 			ln.Close()
 			wg.Done()
 		}()
@@ -119,8 +127,10 @@ func Example_tcpServer() {
 		panic(err)
 	}
 	<-upg.Exit()
+	//log.Println("receive from exitC channel.")
 
 	close(quit)
+	//log.Println("quit the listening.")
 
 	wg.Wait()
 	log.Println("finish the old process.")
