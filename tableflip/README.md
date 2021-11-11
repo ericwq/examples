@@ -64,6 +64,6 @@ Watch the output of server side log.
 
 ## Understand tableflip code
 
-The key design of tableflip is the parent process shares the same sockets withe the child process.
+The key design of tableflip is the parent process and child process share the same sockets. The parent process is the old version. The child process is the new one.
 
 ![tableflip.001.png](images/tableflip.001.png)
