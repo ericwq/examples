@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
@@ -55,7 +57,7 @@ func Example_tcpServer() {
 	// Do an upgrade on SIGHUP
 	go func() {
 		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGHUP, syscall.SIGUSR2)
+		signal.Notify(sig, syscall.SIGHUP, syscall.SIGQUIT)
 		for s := range sig {
 			switch s {
 			case syscall.SIGHUP:
@@ -64,15 +66,16 @@ func Example_tcpServer() {
 				if err != nil {
 					log.Println("upgrade failed:", err)
 				}
-			case syscall.SIGUSR2:
-				//log.Println("got message SIGUSER2.")
+			case syscall.SIGQUIT:
+				log.Println("got message SIGQUIT.")
 				upg.Stop()
 				return
 			}
 		}
 	}()
 
-	ln, err := upg.Fds.Listen("tcp", *listenAddr)
+	ln, err := upg.Listen("tcp", *listenAddr)
+
 	if err != nil {
 		log.Fatalln("Can't listen:", err)
 	}
@@ -83,43 +86,36 @@ func Example_tcpServer() {
 	wg.Add(1)
 	go func() {
 		defer func() {
-			//log.Println("stop listening.")
+			log.Println("stop listening.")
 			ln.Close()
 			wg.Done()
 		}()
 
 		log.Println("listening on ", ln.Addr())
+		lis := ln.(*net.TCPListener)
 
 		for {
 			select {
 			case <-quit:
 				return
 			default:
-			}
-			c, err := ln.Accept()
-			if err != nil {
-				log.Println("Accept return error, stop accept. err:", err)
-				return
-			}
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
-				c.SetDeadline(time.Now().Add(time.Second))
-
-				//read message from the client and print it on screen
-				var buf []byte = make([]byte, 32)
-				_, err := c.Read(buf)
+				// set listener accept time out: 2 second
+				lis.SetDeadline(time.Now().Add(time.Second * 2))
+				conn, err := lis.Accept()
 				if err != nil {
-					log.Println("read from connection error:", err)
+					if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+						//log.Println("accept time out")
+					} else {
+						log.Println("accept error", err)
+					}
 				} else {
-					msg := strings.ReplaceAll(string(buf), "\n", "")
-					log.Printf("receive message:[%s]", msg)
+					wg.Add(1)
+					go func() {
+						handleConnection(conn, quit)
+						wg.Done()
+					}()
 				}
-				//c.Write([]byte("It is a mistake to think you can solve any major problems just with potatoes.\n"))
-				c.Close()
-			}()
+			}
 		}
 	}()
 
@@ -127,14 +123,52 @@ func Example_tcpServer() {
 		panic(err)
 	}
 	<-upg.Exit()
-	//log.Println("receive from exitC channel.")
+	log.Println("receive from exitC channel.")
 
 	close(quit)
-	//log.Println("quit the listening.")
+	log.Println("quit the listening.")
 
 	wg.Wait()
 	log.Println("finish the old process.")
 
 	//log.Println("Exit() pause for a moment.")
 	//time.Sleep(time.Second * 2)
+}
+
+func handleConnection(conn net.Conn, quit chan struct{}) {
+
+	defer conn.Close()
+
+	var buf []byte = make([]byte, 32)
+	//log.Println("handle connection")
+ReadLoop:
+	for {
+		select {
+		case <-quit:
+			return
+		default:
+
+			// set read time out
+			conn.SetDeadline(time.Now().Add(200 * time.Millisecond))
+
+			//read message from the client and print it on screen
+			n, err := conn.Read(buf)
+			if err != nil {
+				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+					//log.Println("read time out")
+					continue ReadLoop
+				} else if err != io.EOF {
+					log.Println("read error", err)
+					return
+				}
+			}
+
+			if n == 0 {
+				//log.Printf("done connection.")
+				return
+			}
+			msg := strings.ReplaceAll(string(buf), "\n", "")
+			log.Printf("receive message from [%s]:[%s]", conn.RemoteAddr().String(), msg)
+		}
+	}
 }
