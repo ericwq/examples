@@ -66,4 +66,4 @@ Watch the output of server side log.
 
 The key design of tableflip is the parent process shares the same sockets withe the child process.
 
-![design](images/tableflip.001.png)
+![tableflip.001.png](images/tableflip.001.png)
