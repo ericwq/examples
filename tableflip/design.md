@@ -1,4 +1,14 @@
-### Parent process part
+### Parent process part 3
+
+`startChild()` calls `env.newProc()` to start the child process. And passes FD (file descriptors) and environment vars to child process. Here we share the listen sockets (sockets is also FD) via process inheritance. There is another way to share FD between different processes (process without inheritance relationship). See [here](https://github.com/ericwq/examples/tree/main/socket_dup) for detail.
+
+- `startChild()` starts `writeName()`, `waitExit()` and `waitReady()` goroutines.
+- These goroutines runs on the parent side.
+- `child.writeNames()` goroutine writes to `namesW` pipe to send FD names to child.
+- `child.waitExit()` goroutine waits for the child process to exit, in some case child process failed to start.
+- `child.waitExit()` sends the child process return error to `child.result` channel.
+- `child.waitReady()` goroutine reads from `readR` pipe to get the ready message from the child.
+- `child.waitReady()` returns `namesW` to `child.ready` channel
 
 ```go
 func startChild(env *env, passedFiles map[fileName]*file) (*child, error) {                                                                                            
@@ -94,23 +104,20 @@ func (c *child) writeNames(names [][]string) {
 }
 ```
 
-- `startChild()` calls `env.newProc()` to start the child process. Before that, `startChild()` creates two pipes.
-- Two pipes are used for communication between parent and child. Parent sends FD names to child. Child sends ready message to parent.
-- `env.newProc()` passes the `passedFiles` to child process, which are the FD (file descriptors) of pipes and FD of all kinds of sockets.
-- The `readyW` and `namesR` pipes is passed to the child process. `readyR` and `namesW` pipes stays with the parent.
-- `env.newProc()` passes the `environ` to child process, which are environment variables.
+- First , `startChild()` creates two pipes, that pipes are used for communication between parent and child.
+- Parent sends FD names to child through pipe. Child sends ready message to parent through another pipe.
+- The `readyW` and `namesR` pipes is passed to the child process. `readyR` and `namesW` stays with the parent.
 - Note the `TABLEFLIP_HAS_PARENT_7DIU3` environment var, which helps to identify parent exist.
-- `startChild()` starts `writeName()`, `waitExit()` and `waitReady()` goroutine. These goroutine runs on the parent side.
-- `child.writeNames()` goroutine writes to `namesW` pipe to send FD names to child.
-- `child.waitExit()` goroutine waits for the child process to exit, in some case child process failed to start.
-- `child.waitReady()` goroutine reads from `readR` pipe to get the ready message from the child.
-- `env.newProc()` is actually the `newOSProcess()` function. `newOSProcess()` is just a wrapper of `syscall.StartProcess()`.
-- `child.waitReady()` returns `namesW` to `child.ready` channel
-- `child.waitExit()` return the child process return error to `child.result` channel.
+- `env.newProc()` passes the `passedFiles` to child process, which are the FD of pipes and all kinds of sockets.
+- `env.newProc()` passes the `environ` to child process, these are environment variables.
+- `env.newProc()` is actually the `newOSProcess()` function.
+- `newOSProcess()` is just a wrapper of `syscall.StartProcess()`.
 
-### Child process part
+Once `env.newProc()` is called, the child process is created.
 
-For the child process, the first thing is to `New()` a `Upgrader` first, then `Listen()`, then `Rady()`. Let's discuss them in detail.
+### Child process part 1
+
+For the child process, the first thing is to create (`New()`) a `Upgrader` object first, then `Listen()`, then `Rady()`. Let's discuss them in in detail.
 
 ```go
 var (
@@ -175,10 +182,11 @@ func newUpgrader(env *env, opts Options) (*Upgrader, error) {
 }
 ```
 
-- `New()` is called to create a `Upgrader`. That wok is done by calling `newUpgrader()`. Note `stdEnvUpgrader` is a singlton object.
-- `newUpgrader()` calls `newParent()` to build the parent object and prepare the FD inherited from the parent process.
-- `newUpgrader()` builds `Upgrader` object and starts a goroutine `Upgrader.run()`.
+- `New()` is called to create a `Upgrader`.
+- The wok is done by calling `newUpgrader()`. Note `stdEnvUpgrader` is a singlton object.
+- `newUpgrader()` calls `newParent()` to build the parent object.
 - `newUpgrader()` calls `newFds()` to build the inherited FD map.
+- `newUpgrader()` builds `Upgrader` object and starts a goroutine `Upgrader.run()`.
 - You has already see the `Upgrader.run()` in the [Parent process part](#parent-process-part).
 
 ```go
@@ -253,14 +261,15 @@ func (ps *parent) sendReady() error {
 }
 ```
 
-- `newParent()` checks the `TABLEFLIP_HAS_PARENT_7DIU3` environment var. if it doesn't exist, there is no parent ever before.
-- `newParent()` calls `env.newFile` to return a new File with the given FD (file descriptor) 3 to write ready message. It's `readyW`.
-- `newParent()` calls `env.newFile` to return a new File with the given FD (file descriptor) 4 to read the FD names. It's `namesR`.
-- `newParent()` reads from `rd` pipe, a.k.a. `namesR`, to get the FD names from parent process.
-- `newParent()` builds `files` from the FD names and FD inherited from parent process. `env.newProc()` passed the FD to child process.
-- `newParent()` starts a anonymous goroutine to keep reading from `rd` pipe, a.k.a `namesR` pipe, until the parent process exit.
-- When that happens, the goroutine returns the `err` to `parent.result` channel and close the `parent.exited` channel.
-- `parent.wr` is the `readyW` pipe. `parent.sendReady()` uses the pipe to send the ready message to parent process. magic number 42.
+- `newParent()` checks the `TABLEFLIP_HAS_PARENT_7DIU3` environment var to identify the parent exist.
+- `env.newFile(3,...)` is called to the `readyW` pipe. FD 3 is determined by `startChild()`.
+- `env.newFile(4,...)` is called to the `namesR` pipe. FD 4 is determined by `startChild()`.
+- `newParent()` reads from `namesR` to get the FD names from parent process.
+- `newParent()` builds FD map - `files` with FD and FD names.
+
+`newParent()` starts a anonymous goroutine to keep reading from `namesR` pipe, until the parent process exit. When that happens, the goroutine sends `err` to `parent.result` channel and close `parent.exited` channel.
+
+From the above code, `parent.wr` is the `readyW` pipe. `parent.sendReady()` uses `readyW` pipe to send the ready message to parent process. The ready message is just a magic number: 42.
 
 ```go
 func newFds(inherited map[fileName]*file, lc *net.ListenConfig) *Fds {
@@ -283,7 +292,9 @@ func newFds(inherited map[fileName]*file, lc *net.ListenConfig) *Fds {
 - `newFds()` builds `Fds` with inherited FD map and `net.ListenConfig` parameters.
 - Please note the `net.ListenConfig` parameters can be customized by `opt.ListenConfig` parameter.
 
-The application must use `Upgrader.Listen()` to replace the usually `net.Listen()` function.
+### Child process part 2
+
+The application must use `Upgrader.Listen()` to replace the usually `net.Listen()` function. `Upgrader.Listen()` will do some tricky to keep tracking the FD of listen sockets.
 
 ```go
 // Listen returns a listener inherited from the parent process, or creates a new one.
@@ -330,11 +341,11 @@ func (f *Fds) ListenWithCallback(network, addr string, callback func(network, ad
 }
 ```
 
-- `Fds.Listen()` calls `Fds.ListenWithCallback()` to returns a listener inherited from the parent process, or creates a new one.
-- `Fds.ListenWithCallback()` returns a listener inherited from the parent process, or calls the supplied callback to create a new one.
+- `Fds.ListenWithCallback()` returns a listener inherited from the parent process, or
+- `Fds.ListenWithCallback()` calls the supplied callback to create a new one.
 - `f.listenerLocked()` returns a listener inherited from the parent process.
 - `callback()` is actually `f.newListener()`, which create a new listen socket.
-- `f.addListenerLocked()`  add the new created listen socket to `f.used` map.
+- `f.addListenerLocked()` adds the new created listen socket to `f.used` map.
 
 ```go
 func (f *Fds) listenerLocked(network, addr string) (net.Listener, error) {
@@ -404,14 +415,19 @@ func dupFd(fd uintptr, name fileName) (*file, error) {
 
 ```
 
-- `Fds.ListenerLocked()` builds the `key` with `network`, `addr` parameters and tries to find it from `f.inherited` map.
-- If the key does exist in `f.inherited` map, reuse it and put it in `f.used` map.
+`Fds.ListenerLocked()` builds the `key` with `network`, `addr` parameters. `Fds.ListenerLocked()` tries to find `key` from `f.inherited` map. If the key does exist in `f.inherited` map, reuse it and put it in `f.used` map.
+
 - `Fds.addSyscallConnLocked()` builds the `key` with `kind`, `network` `addr` parameters.
 - `Fds.addSyscallConnLocked()` builds the `file` by calling `dupConn()`.
 - `Fds.addSyscallConnLocked()` puts the `key` and `file` into `f.used` map.
-- `syscall.Conn` interface can provide access to the underlying file descriptor or handle. Here it provide access to system `fd`.
 
-The application must calls `Upgrader.Ready()` to notify the `Upgrader.run()` goroutine that the child process is ready. It also sends the ready message to the parent process.
+`syscall.Conn` interface can provide access to the underlying file descriptor or handle. Here it provide access to system `fd`.
+
+### Child process part 3
+
+The application must call `Upgrader.Ready()` to notify `Upgrader.run()` goroutine that the child process is ready. It also sends the ready message to the parent process. As show in the following diagram.
+
+![tableflip.002.png](images/tableflip.002.png)
 
 ```go
 // Ready signals that the current process is ready to accept connections.
@@ -436,15 +452,125 @@ func (u *Upgrader) Ready() error {
     return u.parent.sendReady()
 }
 
+func (ps *parent) sendReady() error {
+    defer ps.wr.Close()
+    if _, err := ps.wr.Write([]byte{notifyReady}); err != nil {
+        return fmt.Errorf("can't notify parent process: %s", err)
+    }
+    return nil
+}
 ```
 
-- In child process, `parent.sendReady()` sends the ready message to `readyW` pipe. See `parent.sendReady()` method.
-- The parent process receives the ready message from the `readyR` pipe. See `child.waitReady()` goroutine.
-- The parent process receives `c.namesW` from from `child.ready` channel. See `Upgrader.doUpgrade()` method.
-- In parent process, `u.doUpgrade()` returns with the `namesW` file. See `Upgrader.run()` method.
-- In Parent process, before `u.doUpgrade()` returns, `u.exitC` channel is closed. See `Upgrader.run()` method.
+In child process:
 
-The application calls `Upgrader.Stop()` to stop the current process.
+1. `u.readyOnce.Do` close all the inherited FD and close the `u.readyC` channel.
+2. `parent.sendReady()` is called to send ready message to parent process.
+3. `parent.sendReady()` uses `readyW` pipe to send the magic number to parent process.
+
+```go
+func (c *child) waitReady(ready chan<- *os.File) {                                                                                              
+    var b [1]byte
+    if n, _ := c.readyR.Read(b[:]); n > 0 && b[0] == notifyReady {
+        // We know that writeNames has exited by this point.
+        // Closing the FD now signals to the child that the parent
+        // has exited.
+        ready <- c.namesW
+    }
+    c.readyR.Close()
+}
+
+func (u *Upgrader) doUpgrade() (*os.File, error) {
+    child, err := startChild(u.env, u.Fds.copy())
+    if err != nil {
+        return nil, fmt.Errorf("can't start child: %s", err)
+    }
+
+    readyTimeout := time.After(u.opts.UpgradeTimeout)
+    for {
+        select {
+        case request := <-u.upgradeC:
+            request <- errors.New("upgrade in progress")
+
+        case err := <-child.result:
+            if err == nil {
+                return nil, fmt.Errorf("child %s exited", child)
+            }
+            return nil, fmt.Errorf("child %s exited: %s", child, err)
+
+        case <-u.stopC:
+            child.Kill()
+            return nil, errors.New("terminating")
+
+        case <-readyTimeout:
+            child.Kill()
+            return nil, fmt.Errorf("new child %s timed out", child)
+
+        case file := <-child.ready:
+            return file, nil
+        }
+    }
+}
+
+func (u *Upgrader) run() {
+    defer close(u.exitC)
+
+    var (
+        parentExited <-chan struct{}
+        processReady = u.readyC
+    )
+
+    if u.parent != nil {
+        parentExited = u.parent.exited
+    }
+
+    for {
+        select {
+        case <-parentExited:
+            parentExited = nil
+
+        case <-processReady:
+            processReady = nil
+
+        case <-u.stopC:
+            u.Fds.closeAndRemoveUsed()
+            return
+
+        case request := <-u.upgradeC:
+            if processReady != nil {
+                request <- errNotReady
+                continue
+            }
+
+            if parentExited != nil {
+                request <- errors.New("parent hasn't exited")
+                continue
+            }
+
+            file, err := u.doUpgrade()
+            request <- err
+
+            if err == nil {
+                // Save file in exitFd, so that it's only closed when the process
+                // exits. This signals to the new process that the old process
+                // has exited.doUpgrade
+                u.exitFd <- neverCloseThisFile{file}
+                u.Fds.closeUsed()
+                return
+            }
+        }
+    }
+}
+```
+
+In parent process:
+
+4. `child.waitReady()` goroutine receives the ready message and send it to `child.ready` channel.
+5. `Upgrader.doUpgrade()` method receives `c.namesW` from from `child.ready` channel.
+6. In `Upgrader.run()`, `Upgrader.doUpgrade()` returns the `namesW` pipe and close `u.exitC` channel.
+
+### Child process part 4
+
+The application calls `Upgrader.Stop()` to stop the current process, usually in defer function.
 
 ```go
 // Stop prevents any more upgrades from happening, and closes
@@ -465,5 +591,5 @@ func (u *Upgrader) Stop() {
 
 - `Upgrader.Stop()` method also results in `Upgrader.doUpgrade()` return with an error.
 - `Upgrader.Stop()` method also results in `Upgrader.run()` return and close the `u.exitC` channel.
-- As long as your application is running, the `Upgrader.run()` goroutine keeps running.
-- If `Upgrader.run()` goroutine stops, the Application will unblock from the `u.exitC` channel.
+
+As long as your application is running, the `Upgrader.run()` goroutine keeps running. If `Upgrader.run()` goroutine stops, the Application will unblock from the `u.exitC` channel.
