@@ -33,7 +33,7 @@ In the following diagram, `env.newProc()` starts the child process, passes the (
 
 - [Graceful shutdown of a TCP server in Go](https://eli.thegreenplace.net/2020/graceful-shutdown-of-a-tcp-server-in-go/)
 
-## Upgrade process
+## Upgrade procedure
 
 Let's assume the tableflip based application is running and providing service to the clients. Now you upload the new application version to the target server. You can upload the new configuration for the application or continue with the old configuration.
 
@@ -165,12 +165,12 @@ func (f *Fds) closeUsed() {
 - After receive `request` from `u.upgradeC` channel, `processReady` and `parentExited` is checked. Both of them need to be nil.
 - `processReady` is `u.readyC` channel. When `Upgrader.Ready()` is called, `u.readyC` is closed. `processReady` get the nil value.
 - `parentExited` is nil by default. If `u.parent` exist, `parentExited` refer to `u.parent.exited` channel.
-- `u.parent.exited` is processed in `newParent()`. `u.parent.exited` will be closed if the parent process finished.
-- Finally `u.doUpgrade()` is called to perform the upgrade job. `u.doUpgrade()` returns the `c.namesW` pipe.
-- After `u.doUpgrade()` finished, the `c.namesW` pipe is saved in `u.exited`,  it's only closed when the process exits.
+- `u.parent.exited` is handled in `newParent()`. `u.parent.exited` will be closed if the parent process finished.
+- Finally `u.doUpgrade()` is called to start the upgrade procedure. `u.doUpgrade()` returns with the `c.namesW` pipe.
+- After `u.doUpgrade()` finished, the `c.namesW` pipe is saved in `u.exitFd`,  it's only closed when the parent process exit.
 - `Fds.closeUsed()` closes all the used file descriptor.
-- During `run()` goroutine works, it can be canceled by message from `u.stopC` channel.
-- Before return, `run()` will close `u.exitC` channel as the defer job. Close `u.exitC` means the application is ready to exit.
+
+During `run()` goroutine works, it can be canceled by message from `u.stopC` channel. Before return, `run()` will close `u.exitC` channel as the defer job. Close `u.exitC` means the parent process is ready to exit.
 
 ```go
 func (u *Upgrader) doUpgrade() (*os.File, error) {
