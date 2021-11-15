@@ -62,8 +62,6 @@ Let's assume the tableflip based application is running and providing service to
 - You send the signal to the old process with `kill -s HUP [PID]`.
 - `Upgrader.Upgrade()` is the handler of `syscall.SIGHUP`. `Upgrader.Upgrade()` will be called upon receiving the `syscall.SIGHUP`.
 
-### Parent process part 1
-
 - Upon receives message from `u.stopC` channel, `Upgrader.Upgrade()` will reject it. The upgrade progress is going on.
 - Upon receives message from `u.exitC` channel, `Upgrader.Upgrade()` will reject it. The upgrade progress is going on.
 
@@ -86,7 +84,7 @@ func (u *Upgrader) Upgrade() error {
 - `Upgrader.Upgrade()` creates a buffered `response` channel and send it to `u.upgradeC` channel.
 - `Upgrader.Upgrade()` reads the message from `response` channel and blocks on the channel.
 
-### Parent process part 2
+### Parent process part 1
 
 - `Upgrader.run()` goroutine will receive the upgrade `request` from `u.upgradeC` channel.
 
@@ -171,6 +169,8 @@ func (f *Fds) closeUsed() {
 - `Fds.closeUsed()` closes all the used file descriptor.
 
 During `run()` goroutine works, it can be canceled by message from `u.stopC` channel. Before return, `run()` will close `u.exitC` channel as the defer job. Close `u.exitC` means the parent process is ready to exit.
+
+### Parent process part 2
 
 ```go
 func (u *Upgrader) doUpgrade() (*os.File, error) {
