@@ -60,10 +60,11 @@ func (u *Upgrader) Upgrade() error {
 ```
 
 - `Upgrader.Upgrade()` creates a buffered `response` channel and send it to `u.upgradeC` channel.
-- `Upgrader.Upgrade()` reads the message from `response` channel and blocks on the channel, once receiving the message returns.
-- `Upgrader.run()` goroutine will receive the upgrade `request` from `u.upgradeC` channel.
+- `Upgrader.Upgrade()` reads the message from `response` channel and blocks on the channel.
 
 ### Parent process part 2
+
+- `Upgrader.run()` goroutine will receive the upgrade `request` from `u.upgradeC` channel.
 
 ```go
 func (u *Upgrader) run() {
@@ -145,7 +146,7 @@ func (f *Fds) closeUsed() {
 - After `u.doUpgrade()` finished, the `c.namesW` pipe is saved in `u.exited`,  it's only closed when the process exits.
 - `Fds.closeUsed()` closes all the used file descriptor.
 - During `run()` goroutine works, it can be canceled by message from `u.stopC` channel.
-- Before return, `run()` will close `u.exitC` channel as the last job. Close `u.exitC` means the aplication is ready to exit.
+- Before return, `run()` will close `u.exitC` channel as the defer job. Close `u.exitC` means the application is ready to exit.
 
 ```go
 func (u *Upgrader) doUpgrade() (*os.File, error) {
@@ -179,10 +180,23 @@ func (u *Upgrader) doUpgrade() (*os.File, error) {
         }
     }
 }
+
+func (f *Fds) copy() map[fileName]*file {
+    f.mu.Lock()
+    defer f.mu.Unlock()
+
+    files := make(map[fileName]*file, len(f.used))
+    for key, file := range f.used {
+        files[key] = file
+    }
+
+    return files
+}
 ```
 
-- `Upgrader.doUpgrade()` calls `startChild()` to start the child process. Pass the `u.Fds.copy()` which is the file descriptors as parameter.
-- `Upgrader.doUpgrade()` waits for the child process until receiving the `child.ready` or `child.result` message.
+- `Upgrader.doUpgrade()` calls `startChild()` to start the child process. Pass the `u.Fds.copy()` as parameter.
+- `u.Fds.copy()` clones the `Fds.used` map, Which means child process will inherit the FD.  
+- `Upgrader.doUpgrade()` waits for the child process until receive the `child.ready` or `child.result` message.
 - `child.ready` means child process is ready to serve the clients.
 - `child.result` means child process exit because of some fail.
 
