@@ -60,8 +60,8 @@ Let's assume the tableflip based application is running and providing service to
 ```
 
 - You send the signal to the old process with `kill -s HUP [PID]`.
-- `Upgrader.Upgrade()` is the handler of `syscall.SIGHUP`. `Upgrader.Upgrade()` will be called upon receiving the `syscall.SIGHUP`.
-
+- `Upgrader.Upgrade()` is the handler of `syscall.SIGHUP`.
+- `Upgrader.Upgrade()` will be called upon receiving the `syscall.SIGHUP`.
 - Upon receives message from `u.stopC` channel, `Upgrader.Upgrade()` will reject it. The upgrade progress is going on.
 - Upon receives message from `u.exitC` channel, `Upgrader.Upgrade()` will reject it. The upgrade progress is going on.
 
