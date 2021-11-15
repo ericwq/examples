@@ -64,6 +64,9 @@ Let's assume the tableflip based application is running and providing service to
 
 ### Parent process part 1
 
+- Upon receives message from `u.stopC` channel, `Upgrader.Upgrade()` will reject it. The upgrade progress is going on.
+- Upon receives message from `u.exitC` channel, `Upgrader.Upgrade()` will reject it. The upgrade progress is going on.
+
 ```go
 // Upgrade triggers an upgrade.
 func (u *Upgrader) Upgrade() error {
