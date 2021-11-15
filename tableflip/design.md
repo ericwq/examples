@@ -1,6 +1,6 @@
 # Understand tableflip design
 
-The key design of tableflip is the parent process and child process share the same sockets. The parent process is the old version. The child process is the new one.
+The key design of tableflip is the parent process and child process share the same sockets. The parent process is the old version. The child process is the new version. With the help from tableflip, zero downtime upgrade is possible.
 
 There is another way to pass FD between different processes (process without inheritance relationship). See [here](https://github.com/ericwq/examples/tree/main/socket_dup) for detail.
 
@@ -25,7 +25,7 @@ For those share (listen socket) file descriptors processes, kernel will send inc
     })
 ```
 
-In the following diagram, `env.newProc()` starts the child process, passes the (listen socket) file descriptors to the child process. Thus parent and child process share the same (listen socket) file descriptors. Here plural means more than one (listen socket) file descriptors can be passed to the child process.
+In the following diagram, `env.newProc()` starts the child process, passes the (listen socket) file descriptors to the child process. Thus parent and child process share the same (listen socket) file descriptors. Here plural means more than one (listen socket) file descriptor can be passed to the child process.
 
 ![tableflip.001.png](images/tableflip.001.png)
 
@@ -35,6 +35,14 @@ In the following diagram, `env.newProc()` starts the child process, passes the (
 - [The evolution of reuseport in the Linux kernel](https://programmer.group/the-evolution-of-reuseport-in-the-linux-kernel.html)
 
 ## Upgrade procedure
+
+- [Parent process part 1 - black](#parent-process-part-1---black)
+- [Parent process part 2 - black](#parent-process-part-2---black)
+- [Parent process part 3 - black](#parent-process-part-3---black)
+- [Child process part 1 - red](#child-process-part-1---red)
+- [Child process part 2 - red](#child-process-part-2---red)
+- [Child process part 3 - red](#child-process-part-3---red)
+- [Parent process part 4 - black](#parent-process-part-4---black)
 
 Let's assume the tableflip based application is running and providing service to the clients. Now you upload the new application version to the target server. You can upload the new configuration for the application or continue with the old configuration.
 
@@ -416,7 +424,7 @@ func newUpgrader(env *env, opts Options) (*Upgrader, error) {
 - `newUpgrader()` calls `newParent()` to build the parent object.
 - `newUpgrader()` calls `newFds()` to build the inherited FD map.
 - `newUpgrader()` builds `Upgrader` object and starts a `Upgrader.run()` goroutine.
-- You has already see the `Upgrader.run()` in the [Parent process part](#parent-process-part).
+- You has already see the `Upgrader.run()` in the [Parent process part 1 - black](#parent-process-part-1---black)
 
 ```go
 const (
