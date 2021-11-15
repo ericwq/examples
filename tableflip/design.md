@@ -4,9 +4,15 @@ The key design of tableflip is the parent process and child process share the sa
 
 In the following diagram, `env.newProc()` starts the child process, passes the (listen socket) file descriptors to the child process. Thus parent and child process share the same (listen socket) file descriptors. Here plural means more than one (listen socket) file descriptors can be passed to the child process.
 
+There is another way to share FD between different processes (process without inheritance relationship). See [here](https://github.com/ericwq/examples/tree/main/socket_dup) for detail.
+
 ![tableflip.001.png](images/tableflip.001.png)
 
-## Applicaiton start upgrade
+## Reference
+
+- [Graceful shutdown of a TCP server in Go](https://eli.thegreenplace.net/2020/graceful-shutdown-of-a-tcp-server-in-go/)
+
+## Upgrade process
 
 Let's assume the tableflip based application is running and providing service to the clients. Now you upload the new application version to the target server. You can upload the new configuration for the application or continue with the old configuration.
 
@@ -35,6 +41,8 @@ Let's assume the tableflip based application is running and providing service to
 - You send the signal to the old process with `kill -s HUP [PID]`.
 - `Upgrader.Upgrade()` is the handler of `syscall.SIGHUP`. `Upgrader.Upgrade()` will be called upon receiving the `syscall.SIGHUP`.
 
+### Parent process part 1
+
 ```go
 // Upgrade triggers an upgrade.
 func (u *Upgrader) Upgrade() error {
@@ -54,6 +62,8 @@ func (u *Upgrader) Upgrade() error {
 - `Upgrader.Upgrade()` creates a buffered `response` channel and send it to `u.upgradeC` channel.
 - `Upgrader.Upgrade()` reads the message from `response` channel and blocks on the channel, once receiving the message returns.
 - `Upgrader.run()` goroutine will receive the upgrade `request` from `u.upgradeC` channel.
+
+### Parent process part 2
 
 ```go
 func (u *Upgrader) run() {
@@ -173,14 +183,12 @@ func (u *Upgrader) doUpgrade() (*os.File, error) {
 
 - `Upgrader.doUpgrade()` calls `startChild()` to start the child process. Pass the `u.Fds.copy()` which is the file descriptors as parameter.
 - `Upgrader.doUpgrade()` waits for the child process until receiving the `child.ready` or `child.result` message.
-- `child.ready` means the child process is ready to serve the clients. 
+- `child.ready` means child process is ready to serve the clients.
+- `child.result` means child process exit because of some fail.
 
-## Reference
-
-- [Graceful shutdown of a TCP server in Go](https://eli.thegreenplace.net/2020/graceful-shutdown-of-a-tcp-server-in-go/)
 ### Parent process part 3
 
-`startChild()` calls `env.newProc()` to start the child process. And passes FD (file descriptors) and environment vars to child process. Here we share the listen sockets (sockets is also FD) via process inheritance. There is another way to share FD between different processes (process without inheritance relationship). See [here](https://github.com/ericwq/examples/tree/main/socket_dup) for detail.
+`startChild()` calls `env.newProc()` to start the child process. And passes FD (file descriptors) and environment vars to child process. Here we share the listen sockets (sockets is also FD) via process inheritance.
 
 - `startChild()` starts `writeName()`, `waitExit()` and `waitReady()` goroutines.
 - These goroutines runs on the parent side.
