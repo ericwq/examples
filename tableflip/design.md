@@ -1,3 +1,183 @@
+# Understand tableflip design
+
+The key design of tableflip is the parent process and child process share the same sockets. The parent process is the old version. The child process is the new one.
+
+In the following diagram, `env.newProc()` starts the child process, passes the (listen socket) file descriptors to the child process. Thus parent and child process share the same (listen socket) file descriptors. Here plural means more than one (listen socket) file descriptors can be passed to the child process.
+
+![tableflip.001.png](images/tableflip.001.png)
+
+## Applicaiton start upgrade
+
+Let's assume the tableflip based application is running and providing service to the clients. Now you upload the new application version to the target server. You can upload the new configuration for the application or continue with the old configuration.
+
+```go
+    // Do an upgrade on SIGHUP
+    go func() {
+        sig := make(chan os.Signal, 1)
+        signal.Notify(sig, syscall.SIGHUP, syscall.SIGQUIT)
+        for s := range sig {
+            switch s {
+            case syscall.SIGHUP:
+                //log.Println("got message SIGHUP.")
+                err := upg.Upgrade()
+                if err != nil {
+                    log.Println("upgrade failed:", err)
+                }
+            case syscall.SIGQUIT:
+                log.Println("got message SIGQUIT.")
+                upg.Stop()
+                return
+            }
+        }
+    }()
+```
+
+- You send the signal to the old process with `kill -s HUP [PID]`.
+- `Upgrader.Upgrade()` is the handler of `syscall.SIGHUP`. `Upgrader.Upgrade()` will be called upon receiving the `syscall.SIGHUP`.
+
+```go
+// Upgrade triggers an upgrade.
+func (u *Upgrader) Upgrade() error {
+    response := make(chan error, 1)
+    select {
+    case <-u.stopC:
+        return errors.New("terminating")
+    case <-u.exitC:
+        return errors.New("already upgraded")
+    case u.upgradeC <- response:
+    }
+
+    return <-response
+}
+```
+
+- `Upgrader.Upgrade()` creates a buffered `response` channel and send it to `u.upgradeC` channel.
+- `Upgrader.Upgrade()` reads the message from `response` channel and blocks on the channel, once receiving the message returns.
+- `Upgrader.run()` goroutine will receive the upgrade `request` from `u.upgradeC` channel.
+
+```go
+func (u *Upgrader) run() {
+    defer close(u.exitC)
+
+    var (
+        parentExited <-chan struct{}
+        processReady = u.readyC
+    )
+
+    if u.parent != nil {
+        parentExited = u.parent.exited
+    }
+
+    for {
+        select {
+        case <-parentExited:
+            parentExited = nil
+
+        case <-processReady:
+            processReady = nil
+
+        case <-u.stopC:
+            u.Fds.closeAndRemoveUsed()
+            return
+
+        case request := <-u.upgradeC:
+            if processReady != nil {
+                request <- errNotReady
+                continue
+            }
+
+            if parentExited != nil {
+                request <- errors.New("parent hasn't exited")
+                continue
+            }
+
+            file, err := u.doUpgrade()
+            request <- err
+
+            if err == nil {
+                // Save file in exitFd, so that it's only closed when the process
+                // exits. This signals to the new process that the old process
+                // has exited.
+                u.exitFd <- neverCloseThisFile{file}
+                u.Fds.closeUsed()
+                return
+            }
+        }
+    }
+}
+
+// This file must never be closed by the Go runtime, since its used by the
+// child to determine when the parent has died. It must only be closed
+// by the OS.
+// Hence we make sure that this file can't be garbage collected by referencing
+// it from an Upgrader.
+type neverCloseThisFile struct {
+    file *os.File
+}
+
+func (f *Fds) closeUsed() {
+    f.mu.Lock()
+    defer f.mu.Unlock()
+
+    for _, file := range f.used {
+        _ = file.Close()
+    }
+    f.used = make(map[fileName]*file)
+}
+
+```
+
+- After receive `request` from `u.upgradeC` channel, `processReady` and `parentExited` is checked. Both of them need to be nil.
+- `processReady` is `u.readyC` channel. When `Upgrader.Ready()` is called, `u.readyC` is closed. `processReady` get the nil value.
+- `parentExited` is nil by default. If `u.parent` exist, `parentExited` refer to `u.parent.exited` channel.
+- `u.parent.exited` is processed in `newParent()`. `u.parent.exited` will be closed if the parent process finished.
+- Finally `u.doUpgrade()` is called to perform the upgrade job. `u.doUpgrade()` returns the `c.namesW` pipe.
+- After `u.doUpgrade()` finished, the `c.namesW` pipe is saved in `u.exited`,  it's only closed when the process exits.
+- `Fds.closeUsed()` closes all the used file descriptor.
+- During `run()` goroutine works, it can be canceled by message from `u.stopC` channel.
+- Before return, `run()` will close `u.exitC` channel as the last job. Close `u.exitC` means the aplication is ready to exit.
+
+```go
+func (u *Upgrader) doUpgrade() (*os.File, error) {
+    child, err := startChild(u.env, u.Fds.copy())
+    if err != nil {
+        return nil, fmt.Errorf("can't start child: %s", err)
+    }
+
+    readyTimeout := time.After(u.opts.UpgradeTimeout)
+    for {
+        select {
+        case request := <-u.upgradeC:
+            request <- errors.New("upgrade in progress")
+
+        case err := <-child.result:
+            if err == nil {
+                return nil, fmt.Errorf("child %s exited", child)
+            }
+            return nil, fmt.Errorf("child %s exited: %s", child, err)
+
+        case <-u.stopC:
+            child.Kill()
+            return nil, errors.New("terminating")
+
+        case <-readyTimeout:
+            child.Kill()
+            return nil, fmt.Errorf("new child %s timed out", child)
+
+        case file := <-child.ready:
+            return file, nil
+        }
+    }
+}
+```
+
+- `Upgrader.doUpgrade()` calls `startChild()` to start the child process. Pass the `u.Fds.copy()` which is the file descriptors as parameter.
+- `Upgrader.doUpgrade()` waits for the child process until receiving the `child.ready` or `child.result` message.
+- `child.ready` means the child process is ready to serve the clients. 
+
+## Reference
+
+- [Graceful shutdown of a TCP server in Go](https://eli.thegreenplace.net/2020/graceful-shutdown-of-a-tcp-server-in-go/)
 ### Parent process part 3
 
 `startChild()` calls `env.newProc()` to start the child process. And passes FD (file descriptors) and environment vars to child process. Here we share the listen sockets (sockets is also FD) via process inheritance. There is another way to share FD between different processes (process without inheritance relationship). See [here](https://github.com/ericwq/examples/tree/main/socket_dup) for detail.
