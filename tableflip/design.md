@@ -32,6 +32,7 @@ In the following diagram, `env.newProc()` starts the child process, passes the (
 ## Reference
 
 - [Graceful shutdown of a TCP server in Go](https://eli.thegreenplace.net/2020/graceful-shutdown-of-a-tcp-server-in-go/)
+- [The evolution of reuseport in the Linux kernel](https://programmer.group/the-evolution-of-reuseport-in-the-linux-kernel.html)
 
 ## Upgrade procedure
 
@@ -343,7 +344,11 @@ Once `env.newProc()` is called, the child process is created.
 
 ### Child process part 1
 
-For the child process, the first thing is to create (`New()`) a `Upgrader` object first, then `Listen()`, then `Rady()`. Let's discuss them in in detail.
+For the child process, the first step is to create a `Upgrader` object, then `Listen()`. Now the application can use the listen socket to do the business work. The third step for application is to call `Rady()`. Finally, the application need to wait on `Exit()` channel. Let's discuss the steps in detail.
+
+- `New()` is called to create a `Upgrader`.
+- The work is done by calling `newUpgrader()`.
+- Note `stdEnvUpgrader` is a singlton object.
 
 ```go
 var (
@@ -408,11 +413,9 @@ func newUpgrader(env *env, opts Options) (*Upgrader, error) {
 }
 ```
 
-- `New()` is called to create a `Upgrader`.
-- The wok is done by calling `newUpgrader()`. Note `stdEnvUpgrader` is a singlton object.
 - `newUpgrader()` calls `newParent()` to build the parent object.
 - `newUpgrader()` calls `newFds()` to build the inherited FD map.
-- `newUpgrader()` builds `Upgrader` object and starts a goroutine `Upgrader.run()`.
+- `newUpgrader()` builds `Upgrader` object and starts a `Upgrader.run()` goroutine.
 - You has already see the `Upgrader.run()` in the [Parent process part](#parent-process-part).
 
 ```go
