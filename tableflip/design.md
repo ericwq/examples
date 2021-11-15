@@ -2,8 +2,6 @@
 
 The key design of tableflip is the parent process and child process share the same sockets. The parent process is the old version. The child process is the new one.
 
-In the following diagram, `env.newProc()` starts the child process, passes the (listen socket) file descriptors to the child process. Thus parent and child process share the same (listen socket) file descriptors. Here plural means more than one (listen socket) file descriptors can be passed to the child process.
-
 There is another way to pass FD between different processes (process without inheritance relationship). See [here](https://github.com/ericwq/examples/tree/main/socket_dup) for detail.
 
 For those share (listen socket) file descriptors processes, kernel will send incoming requests to those processes in turn. If you wonder how to using `SO_REUSEPORT` for the listen socket, please see the following example code. I have to remind you that using `SO_REUSEPORT` is not necessary for tableflip. See [The evolution of reuseport in the Linux kernel](https://programmer.group/the-evolution-of-reuseport-in-the-linux-kernel.html) for detail.
@@ -26,6 +24,8 @@ For those share (listen socket) file descriptors processes, kernel will send inc
         ListenConfig: lc,
     })
 ```
+
+In the following diagram, `env.newProc()` starts the child process, passes the (listen socket) file descriptors to the child process. Thus parent and child process share the same (listen socket) file descriptors. Here plural means more than one (listen socket) file descriptors can be passed to the child process.
 
 ![tableflip.001.png](images/tableflip.001.png)
 
