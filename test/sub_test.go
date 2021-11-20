@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -11,6 +12,18 @@ import (
 
 // https://go.dev/blog/subtests
 // https://go.dev/blog/fuzz-beta
+
+func TestMain(m *testing.M) {
+
+	// Setup code
+	fmt.Println("Setup")
+
+	exitCode := m.Run()
+
+	// Tear down
+	fmt.Println("Tear down")
+	os.Exit(exitCode)
+}
 
 func BenchmarkTemplateParallel(b *testing.B) {
 	templ := template.Must(template.New("test").Parse("Hello, {{.}}!"))
@@ -88,7 +101,7 @@ func TestTime(t *testing.T) {
 		{"12:31", "America/New_York", "07:34"},
 		{"08:08", "Australia/Sydney", "18:12"},
 	}
-	//fmt.Println("Setup")
+	fmt.Println("Setup TT")
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s in %s", tc.gmt, tc.loc), func(t *testing.T) {
 			loc, err := time.LoadLocation(tc.loc)
@@ -101,5 +114,5 @@ func TestTime(t *testing.T) {
 			}
 		})
 	}
-	//fmt.Println("Teardown")
+	fmt.Println("Teardown TT")
 }
