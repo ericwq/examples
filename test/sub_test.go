@@ -16,13 +16,27 @@ import (
 func TestMain(m *testing.M) {
 
 	// Setup code
-	fmt.Println("Setup")
+	//fmt.Println("Setup")
 
 	exitCode := m.Run()
 
 	// Tear down
-	fmt.Println("Tear down")
+	//fmt.Println("Tear down")
 	os.Exit(exitCode)
+}
+
+func BenchmarkTmplExucte(b *testing.B) {
+	b.ReportAllocs()
+	templ := template.Must(template.New("test").Parse("Hello, {{.}}!"))
+	b.RunParallel(func(pb *testing.PB) {
+		// Each goroutine has its own bytes.Buffer.
+		var buf bytes.Buffer
+		for pb.Next() {
+			// The loop body is executed b.N times total across all goroutines.
+			buf.Reset()
+			templ.Execute(&buf, "World")
+		}
+	})
 }
 
 func BenchmarkTemplateParallel(b *testing.B) {
@@ -38,10 +52,12 @@ func BenchmarkTemplateParallel(b *testing.B) {
 	})
 }
 
+/*
 func BenchmarkFib3(b *testing.B) { benchmarkFib(3, b) }
 func BenchmarkFib5(b *testing.B) { benchmarkFib(5, b) }
 func BenchmarkFib7(b *testing.B) { benchmarkFib(7, b) }
 func BenchmarkFib9(b *testing.B) { benchmarkFib(9, b) }
+*/
 
 func BenchmarkFib(b *testing.B) {
 	benchmarks := []struct {
@@ -49,9 +65,8 @@ func BenchmarkFib(b *testing.B) {
 		value int
 	}{
 		{"Fib3", 3},
-		{"Fib5", 5},
 		{"Fib7", 7},
-		{"Fib9", 9},
+		{"Fib10", 10},
 	}
 
 	for _, bm := range benchmarks {
@@ -81,6 +96,7 @@ func BenchmarkAppendFloat(b *testing.B) {
 		{"NegExp", -5.11e-95, 'g', -1, 64},
 		{"Big", 123456789123456789123456789, 'g', -1, 64},
 	}
+	//fmt.Println("Setup AppendFloat")
 	dst := make([]byte, 30)
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
@@ -89,6 +105,7 @@ func BenchmarkAppendFloat(b *testing.B) {
 			}
 		})
 	}
+	//fmt.Println("Setup AppendFloat")
 }
 
 func TestTime(t *testing.T) {
@@ -101,7 +118,7 @@ func TestTime(t *testing.T) {
 		{"12:31", "America/New_York", "07:34"},
 		{"08:08", "Australia/Sydney", "18:12"},
 	}
-	fmt.Println("Setup TT")
+	//fmt.Println("Setup TestTime")
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s in %s", tc.gmt, tc.loc), func(t *testing.T) {
 			loc, err := time.LoadLocation(tc.loc)
@@ -114,5 +131,5 @@ func TestTime(t *testing.T) {
 			}
 		})
 	}
-	fmt.Println("Teardown TT")
+	//fmt.Println("Teardown TestTime")
 }

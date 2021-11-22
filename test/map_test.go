@@ -44,9 +44,34 @@ func TestReadFromMap(t *testing.T) {
 	}
 }
 
-func BenchmarkHello(b *testing.B) {
+func Benchmark_fmt_Sprintf(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = fmt.Sprintf("hello ")
+	}
+}
+
+func Sum(numbers []int) int {
+	sum := 0
+	for _, n := range numbers {
+		sum += n
+	}
+	return sum
+}
+
+func TestSum(t *testing.T) {
+	tc := []struct {
+		value    []int
+		expected int
+	}{
+		{[]int{2, 2, 2, 4}, 10},
+		{[]int{-1, -2, -3, -4, 5}, -5},
+		{[]int{-1, -2, 0, 1, 2, 3, 4}, 7},
+	}
+	for _, n := range tc {
+		got := Sum(n.value)
+		if got != n.expected {
+			t.Errorf("expect %d, got %d\n", n.expected, got)
+		}
 	}
 }
 
