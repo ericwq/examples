@@ -82,6 +82,24 @@ func benchmarkFib(i int, b *testing.B) {
 	}
 }
 
+func TestFib(t *testing.T) {
+	tc := []struct {
+		value int
+		want  int
+	}{
+		{3, 2},
+		{7, 13},
+	}
+
+	for _, s := range tc {
+		got := Fib(s.value)
+		//log.Printf("Fib(%d)=%d\n", s.value, got)
+		if got != s.want {
+			t.Errorf("got %d; want %d", got, s.want)
+		}
+	}
+}
+
 func BenchmarkAppendFloat(b *testing.B) {
 	benchmarks := []struct {
 		name    string

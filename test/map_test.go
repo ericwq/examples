@@ -50,14 +50,6 @@ func Benchmark_fmt_Sprintf(b *testing.B) {
 	}
 }
 
-func Sum(numbers []int) int {
-	sum := 0
-	for _, n := range numbers {
-		sum += n
-	}
-	return sum
-}
-
 func TestSum(t *testing.T) {
 	tc := []struct {
 		value    []int
