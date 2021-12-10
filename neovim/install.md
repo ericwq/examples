@@ -4,11 +4,12 @@ alpine:edge
 
 color: curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-bit-color.sh | ash
 
-link: https://www.getman.io/posts/programming-go-in-neovim/
-link: https://toroid.org/modern-neovim#update
-link: https://github.com/hrsh7th/nvim-cmp
-link: https://oroques.dev/notes/neovim-init/
-link: https://github.com/golang/tools/tree/master/gopls
+1. link: https://sourabhbajaj.com/mac-setup/iTerm/
+2. link: https://www.getman.io/posts/programming-go-in-neovim/
+3. link: https://toroid.org/modern-neovim#update
+4. link: https://github.com/hrsh7th/nvim-cmp
+5. link: https://oroques.dev/notes/neovim-init/
+6. link: https://github.com/golang/tools/tree/master/gopls
 
 ```
 $more .profile 
