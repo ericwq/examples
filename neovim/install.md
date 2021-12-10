@@ -1,7 +1,3 @@
-# PAT for GitHub.com
-
--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
-
 ## Neovim 0.6 setup
 
 alpine:edge
