@@ -14,10 +14,10 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 - [Color scheme - sonokai ](https://github.com/sainnhe/sonokai)
 - [Neovim 0.5 features and the switch to init.lua](https://oroques.dev/notes/neovim-init/)
 - [LSP- go language server](https://github.com/golang/tools/tree/master/gopls)
-- [学习 Neovim 全配置， 逃离 VSCode](link: https://zhuanlan.zhihu.com/p/434727338)
+- [学习Neovim全配置，逃离VSCode](https://zhuanlan.zhihu.com/p/434727338)
 - [iTerm2](https://sourabhbajaj.com/mac-setup/iTerm/)
 - [Go neovim configuration](https://www.getman.io/posts/programming-go-in-neovim/)
-- [Base neovim configuration] (https://github.com/brainfucksec/neovim-lua)
+- [Base neovim configuration](https://github.com/brainfucksec/neovim-lua)
 
 ## [Moving to modern Neovim](https://toroid.org/modern-neovim#update)
 - [Package management - packer](https://github.com/wbthomason/packer.nvim)
