@@ -4,6 +4,11 @@ Try to find the better solution for neovim IDE (golang, c, c++, java, lua, html,
 ## Base image
 ```
 docker pull alpine:edge
+
+docker run -it -h neovim --env TZ=Asia/Shanghai  --name neovim \
+--mount source=proj-vol,target=/home/ide/proj \
+--mount type=bind,source=/Users/qiwang/proj,target=/home/ide/develop \
+alpine:edge
 ```
 
 ## true color test:
@@ -45,15 +50,24 @@ alias vi=nvim
 ```
 
 ## [Nert font support](https://github.com/ryanoasis/nerd-fonts#glyph-sets)
+
+[homebrew font](https://github.com/Homebrew/homebrew-cask-fonts/tree/master/Casks)
+
 ```
 % brew tap homebrew/cask-fonts
 % brew install --cask font-hack-nerd-font
+% brew install --cask font-cousine-nerd-font
 ```
 
 ## docker file
-- apk add neovim neovim-doc go git curl tzdata htop python3 fzf
-- apk add tree-sitter nodejs
-- apk add make musl-dev g++
+
+### apk part
+- apk add neovim neovim-doc (30m)
+- apk add git curl tzdata htop (48m)
+- apk add go (538m, 50 packages)
+- apk add tmux (539m, 52 packages)
+
+### neovim environment and packer
 - export HOME=/home/ide
 - export GOPATH=/go
 - mkdir /go
@@ -61,9 +75,19 @@ alias vi=nvim
 - chown -R ide:develop $GOPATH
 - su - ide
 - git clone --depth 1 https://github.com/wbthomason/packer.nvim ~/.local/share/nvim/site/pack/packer/start/packer.nvim
-
+- git clone https://github.com/brainfucksec/neovim-lua.git
+- cd neovim-lua
+- mkdir -p ~/.config/nvim/
+- cp -r nvim/ ~/.config/
+- disable color scheme first, run :PackerSync
+- mkdir -p .config/alacritty/
+- touch .config/alacritty/alacritty.yml
 
 ## others
+- 
+- python3 fzf
+- apk add tree-sitter nodejs
+- apk add make musl-dev g++
 - git clone https://github.com/savq/paq-nvim.git "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/pack/paqs/opt/paq-nvim
 - go install golang.org/x/tools/gopls@latest
 - mkdir -p ~/.config/nvim/lua
