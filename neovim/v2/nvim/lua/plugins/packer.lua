@@ -27,8 +27,17 @@ return packer.startup(function()
 
   use { 'kaicataldo/material.vim' }
 
+  -- icons
+  use 'kyazdani42/nvim-web-devicons'
+
   -- file explorer
-  use 'kyazdani42/nvim-tree.lua'
+  use {
+    'kyazdani42/nvim-tree.lua',
+    requires = {
+      'kyazdani42/nvim-web-devicons', -- optional, for file icon
+    },
+    config = function() require'nvim-tree'.setup {} end
+  }
 
   -- autopair
   use {
@@ -38,18 +47,22 @@ return packer.startup(function()
     end
   }
 
-  -- icons
-  use 'kyazdani42/nvim-web-devicons'
-
---[[
+  -- statusline
+  use {
+    'famiu/feline.nvim',
+    requires = { 'kyazdani42/nvim-web-devicons' },
+  }
   -- indent line
   use 'lukas-reineke/indent-blankline.nvim'
 
-  -- tagviewer
-  use 'liuchengxu/vista.vim'
-
   -- treesitter interface
-  use 'nvim-treesitter/nvim-treesitter'
+  use {
+    'nvim-treesitter/nvim-treesitter',
+    run = ':TSUpdate'
+  }
+
+  -- Lightweight alternative to context.vim implemented with nvim-treesitter.
+  use 'romgrk/nvim-treesitter-context'
 
   -- LSP
   use 'neovim/nvim-lspconfig'
@@ -66,11 +79,24 @@ return packer.startup(function()
     },
   }
 
-  -- statusline
+  --symbol outline
+  use {'simrat39/symbols-outline.nvim'}
+
+  --lsp_signature.nvim
+  --use 'ray-x/lsp_signature.nvim'
+
+  -- dashboard
   use {
-    'famiu/feline.nvim',
+    'goolord/alpha-nvim',
     requires = { 'kyazdani42/nvim-web-devicons' },
+    config = function ()
+        require'alpha'.setup(require'alpha.themes.dashboard'.opts)
+    end
   }
+
+--[[
+  -- tagviewer
+  use 'liuchengxu/vista.vim'
 
   -- git labels
   use {
@@ -81,13 +107,5 @@ return packer.startup(function()
     end
   }
 
-  -- dashboard
-  use {
-    'goolord/alpha-nvim',
-    requires = { 'kyazdani42/nvim-web-devicons' },
-    config = function ()
-        require'alpha'.setup(require'alpha.themes.dashboard'.opts)
-    end
-  }
 --]]
 end)

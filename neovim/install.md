@@ -23,6 +23,7 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 - [iTerm2](https://sourabhbajaj.com/mac-setup/iTerm/)
 - [Go neovim configuration](https://www.getman.io/posts/programming-go-in-neovim/)
 - [Base neovim configuration](https://github.com/brainfucksec/neovim-lua)
+- [Alacritty yaml](https://github.com/alacritty/alacritty/blob/master/alacritty.yml)
 
 ## [Moving to modern Neovim](https://toroid.org/modern-neovim#update)
 - [Package management - packer](https://github.com/wbthomason/packer.nvim)
@@ -77,11 +78,16 @@ alias vi=nvim
 - git clone --depth 1 https://github.com/wbthomason/packer.nvim ~/.local/share/nvim/site/pack/packer/start/packer.nvim
 - git clone https://github.com/brainfucksec/neovim-lua.git
 - cd neovim-lua
-- mkdir -p ~/.config/nvim/
+- mkdir -p ~/.config/
 - cp -r nvim/ ~/.config/
 - disable color scheme first, run :PackerSync
 - mkdir -p .config/alacritty/
 - touch .config/alacritty/alacritty.yml
+- apk add g++ "need g++ to compile treesitter"
+- apk add ccls "c/c++ language server need npm" (860 MiB in 64 packages)
+
+## Telescope
+- apk add ripgrep
 
 ## others
 - 

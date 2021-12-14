@@ -43,9 +43,12 @@ map('n', '<leader>q', ':qa!<CR>', default_opts)
 map('n', '<C-t>', ':Term<CR>', { noremap = true })
 
 -- nvim-tree
-map('n', '<C-n>', ':NvimTreeToggle<CR>', default_opts)       -- open/close
-map('n', '<leader>r', ':NvimTreeRefresh<CR>', default_opts)  -- refresh
-map('n', '<leader>n', ':NvimTreeFindFile<CR>', default_opts) -- search file
+map('n', '<F5>', ':NvimTreeToggle<CR>', default_opts)       -- open/close
+--map('n', '<leader>r', ':NvimTreeRefresh<CR>', default_opts)  -- refresh
+--map('n', '<leader>n', ':NvimTreeFindFile<CR>', default_opts) -- search file
+
+-- symbols-outline : A tree like view for symbols
+map('n', '<F8>', ':SymbolsOutline<CR>', default_opts)   -- open/close
 
 -- Vista tag-viewer
-map('n', '<C-m>', ':Vista!!<CR>', default_opts)   -- open/close
+-- map('n', '<C-m>', ':Vista!!<CR>', default_opts)   -- open/close

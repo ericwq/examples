@@ -18,6 +18,7 @@ local opt = vim.opt         		-- global/buffer/windows-scoped options
 g.mapleader = ','             -- change leader to a comma
 opt.mouse = 'a'               -- enable mouse support
 opt.clipboard = 'unnamedplus' -- copy/paste to system clipboard
+--vim.o.clipboard = 'unnamedplus' -- copy/paste to system clipboard
 opt.swapfile = false          -- don't use swapfile
 
 -----------------------------------------------------------
@@ -25,7 +26,7 @@ opt.swapfile = false          -- don't use swapfile
 -----------------------------------------------------------
 opt.number = true             -- show line number
 opt.showmatch = true          -- highlight matching parenthesis
-opt.foldmethod = 'marker'     -- enable folding (default 'foldmarker')
+--opt.foldmethod = 'marker'     -- enable folding (default 'foldmarker')
 --opt.colorcolumn = '80'        -- line lenght marker at 80 columns
 opt.splitright = true         -- vertical split to the right
 opt.splitbelow = true         -- orizontal split to the bottom
@@ -57,8 +58,8 @@ opt.synmaxcol = 240       -- max column for syntax highlight
 -- Colorscheme
 -----------------------------------------------------------
 opt.termguicolors = true      -- enable 24-bit RGB colors
-cmd [[colorscheme rose-pine]]
---cmd [[colorscheme material]]
+--cmd [[colorscheme rose-pine]]
+cmd [[colorscheme material]]
 --vim.g.material_theme_style ='default'   --  default, palenight, ocean, lighter, and darker.
 --vim.g.material_terminal_italics =1
 
