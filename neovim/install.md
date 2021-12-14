@@ -24,6 +24,9 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 - [Go neovim configuration](https://www.getman.io/posts/programming-go-in-neovim/)
 - [Base neovim configuration](https://github.com/brainfucksec/neovim-lua)
 - [Alacritty yaml](https://github.com/alacritty/alacritty/blob/master/alacritty.yml)
+- [Telescope example](https://gitee.com/sternelee/neovim-nvim/blob/master/init.lua)
+- [clipper](https://github.com/wincent/clipper)
+- [Yank from container](https://stackoverflow.com/questions/43075050/how-to-yank-to-host-clipboard-from-inside-a-docker-container)
 
 ## [Moving to modern Neovim](https://toroid.org/modern-neovim#update)
 - [Package management - packer](https://github.com/wbthomason/packer.nvim)
@@ -43,7 +46,7 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 
 ## .profile
 ```
-$more .profile 
+$more .profile
 export GOPATH=/go
 export PATH=$PATH:$GOPATH/bin
 export PS1='\u@\h:\w $ '
@@ -90,7 +93,7 @@ alias vi=nvim
 - apk add ripgrep
 
 ## others
-- 
+-
 - python3 fzf
 - apk add tree-sitter nodejs
 - apk add make musl-dev g++

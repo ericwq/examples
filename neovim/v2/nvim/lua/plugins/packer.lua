@@ -94,6 +94,15 @@ return packer.startup(function()
     end
   }
 
+  -- Yank to clipboard
+  use {
+    "AckslD/nvim-neoclip.lua",
+    config = function()
+      require('neoclip').setup({
+        default_register = {'"', '+', '*'},
+      })
+    end,
+  }
 --[[
   -- tagviewer
   use 'liuchengxu/vista.vim'
