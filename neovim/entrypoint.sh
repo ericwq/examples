@@ -1,7 +1,6 @@
-#!/bin/ash
-# entrypoint.sh
+#!/bin/bash
 
 set -eu
-tmux new -s foo -d && tmux ls
+tmux new -s golangide -d && tmux ls
 
 exec "$@"
