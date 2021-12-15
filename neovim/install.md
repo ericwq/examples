@@ -11,6 +11,29 @@ docker run -it -h neovim --env TZ=Asia/Shanghai  --name neovim \
 alpine:edge
 ```
 
+## tmux on alacritty (mac)
+```
+docker container exec -u ide -ti neovim ash
+```
+See [here](https://github.com/tmux/tmux/wiki/Clipboard) for the official tmux clipboard document. For tmux, use the following configuration in `.tmux.conf`,
+
+```
+set -s set-clipboard on
+```
+
+For neovim, use the following configuration in `~/.config/nvim/init.lua`
+
+```
+vim.o.clipboard = 'unnamedplus' -- copy/paste to system clipboard
+vim.opt.clipboard = 'unnamedplus' -- copy/paste to system clipboard
+```
+when you run `:checkhealth`, neovim reports
+
+```
+## Clipboard (optional)
+  - OK: Clipboard tool found: pbcopy
+```
+
 ## true color test:
 ```
 curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-bit-color.sh | ash
