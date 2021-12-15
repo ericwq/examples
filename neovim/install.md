@@ -27,6 +27,7 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 - [Telescope example](https://gitee.com/sternelee/neovim-nvim/blob/master/init.lua)
 - [clipper](https://github.com/wincent/clipper)
 - [Yank from container](https://stackoverflow.com/questions/43075050/how-to-yank-to-host-clipboard-from-inside-a-docker-container)
+- [打通Neovim与系统剪切板](https://zhuanlan.zhihu.com/p/419472307)
 
 ## [Moving to modern Neovim](https://toroid.org/modern-neovim#update)
 - [Package management - packer](https://github.com/wbthomason/packer.nvim)
