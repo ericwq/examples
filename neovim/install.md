@@ -11,6 +11,10 @@ docker run -it -h neovim --env TZ=Asia/Shanghai  --name neovim \
 alpine:edge
 ```
 
+## tmux in container
+- [container](https://stackoverflow.com/questions/51809181/how-to-run-tmux-inside-a-docker-container/51814791)
+- [tmux seesion](https://stackoverflow.com/questions/65674604/docker-start-tmux-session-inside-of-dockerfile)
+
 ## tmux on alacritty (mac)
 ```
 docker container exec -u ide -ti neovim ash
