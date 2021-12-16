@@ -18,6 +18,7 @@ local packer = require 'packer'
 -- Add packages
 return packer.startup(function()
   use 'wbthomason/packer.nvim' -- packer can manage itself
+
   -- colorschemes
   use 'tanvirtin/monokai.nvim'
 
@@ -103,10 +104,11 @@ return packer.startup(function()
       })
     end,
   }
---[[
+
   -- tagviewer
   use 'liuchengxu/vista.vim'
 
+--[[
   -- git labels
   use {
     'lewis6991/gitsigns.nvim',

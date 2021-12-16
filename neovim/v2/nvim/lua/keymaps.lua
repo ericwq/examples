@@ -4,7 +4,7 @@
 -----------------------------------------------------------
 
 local map = vim.api.nvim_set_keymap
-local default_opts = { noremap = true, silent = true }
+local default_opts = { noremap = true, silent = false }
 local cmd = vim.cmd
 
 -----------------------------------------------------------
@@ -51,4 +51,4 @@ map('n', '<F5>', ':NvimTreeToggle<CR>', default_opts)       -- open/close
 map('n', '<F8>', ':SymbolsOutline<CR>', default_opts)   -- open/close
 
 -- Vista tag-viewer
--- map('n', '<C-m>', ':Vista!!<CR>', default_opts)   -- open/close
+ map('n', '<C-m>', ':Vista!!<CR>', default_opts)   -- open/close

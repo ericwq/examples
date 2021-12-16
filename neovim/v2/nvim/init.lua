@@ -39,6 +39,4 @@ require('plugins/nvim-cmp')
 require('plugins/nvim-lspconfig')
 require('plugins/symbols-outline')
 require('plugins/alpha-nvim')
---[[
 require('plugins/vista')
---]]

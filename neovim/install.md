@@ -11,6 +11,21 @@ docker run -it -h neovim --env TZ=Asia/Shanghai  --name neovim \
 alpine:edge
 ```
 
+## ssh in container
+- [Docker-SSH连接docker容器](https://www.jianshu.com/p/426f0d8e6cbf)
+- [ssh启动错误：no hostkeys available— exiting](https://wangxianggit.github.io/sshd%20no%20hostkeys%20available/)
+- [tmux in practice](https://medium.com/free-code-camp/tmux-in-practice-series-of-posts-ae34f16cfab0)
+- [tmux in practice: integration with the system clipboard](https://medium.com/free-code-camp/tmux-in-practice-integration-with-system-clipboard-bcd72c62ff7b)
+
+```
+server:
+docker run -d -p 50001:22 --env TZ=Asia/Shanghai -h nvimIDE  --name nvimIDE \
+	nvim:ide /usr/sbin/sshd -D
+
+client:
+ssh ide@localhost -p 50001
+```
+
 ## tmux in container
 - [container](https://stackoverflow.com/questions/51809181/how-to-run-tmux-inside-a-docker-container/51814791)
 - [tmux seesion](https://stackoverflow.com/questions/65674604/docker-start-tmux-session-inside-of-dockerfile)
@@ -116,6 +131,9 @@ alias vi=nvim
 - touch .config/alacritty/alacritty.yml
 - apk add g++ "need g++ to compile treesitter"
 - apk add ccls "c/c++ language server need npm" (860 MiB in 64 packages)
+
+for vista
+- apk add ctags fzf
 
 ## Telescope
 - apk add ripgrep
