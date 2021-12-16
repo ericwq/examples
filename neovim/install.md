@@ -30,6 +30,24 @@ ssh ide@localhost -p 50001
 - [Copying to clipboard from tmux and Vim using OSC 52](https://sunaku.github.io/tmux-yank-osc52.html)
 - [tmux in practice](https://medium.com/free-code-camp/tmux-in-practice-series-of-posts-ae34f16cfab0)
 - [tmux in practice: integration with the system clipboard](https://medium.com/free-code-camp/tmux-in-practice-integration-with-system-clipboard-bcd72c62ff7b)
+- [Getting started with Tmux](https://linuxize.com/post/getting-started-with-tmux/)
+- [A Quick and Easy Guide to tmux](https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/)
+
+1. copy .vimrc.
+2. copy yank to PAHT and chmod +x for it.
+3. edit `~/.config/nvim/init.lua` and add the following content.
+4. yank what you want.
+
+```
+-- Here is the content for ~/.config/nvim/init.lua
+--
+
+-- source a vimscript file
+vim.cmd('source ~/.vimrc')
+
+vim.o.clipboard = 'unnamedplus' -- copy/paste to system clipboard
+vim.opt.clipboard = 'unnamedplus' -- copy/paste to system clipboard
+```
 
 ## tmux on alacritty (mac)
 ```
