@@ -24,6 +24,9 @@ vim.g.loaded_ruby_provider    = 0       -- disable ruby provider
 vim.g.loaded_perl_provider    = 0       -- disable perl provider
 --vim.g.python3_host_prog       = '/usr/bin/python3'
 
+-- source a vimscript file
+vim.cmd('source ~/.config/nvim/vimrc')
+
 -----------------------------------------------------------
 -- Import Lua modules
 -----------------------------------------------------------
@@ -40,3 +43,4 @@ require('plugins/nvim-lspconfig')
 require('plugins/symbols-outline')
 require('plugins/alpha-nvim')
 require('plugins/vista')
+require('scheme')

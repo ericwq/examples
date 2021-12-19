@@ -58,7 +58,7 @@ opt.synmaxcol = 240       -- max column for syntax highlight
 -- Colorscheme
 -----------------------------------------------------------
 opt.termguicolors = true      -- enable 24-bit RGB colors
-cmd [[colorscheme rose-pine]]
+--cmd [[colorscheme rose-pine]]
 --cmd [[colorscheme material]]
 --vim.g.material_theme_style ='default'   --  default, palenight, ocean, lighter, and darker.
 --vim.g.material_terminal_italics =1
