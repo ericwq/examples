@@ -51,10 +51,17 @@ RUN chmod +x $GOPATH/bin/yank
 COPY --chown=ide:develop ./v3/nvim/init.lua	$HOME/.config/nvim/
 COPY --chown=ide:develop ./v3/nvim/lua		$HOME/.config/nvim/lua
 
-# Install the packer plugins
+# TODO: Install the packer plugins
 # https://github.com/wbthomason/packer.nvim/issues/502
 #
+# NvChad version
 #RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
-RUN nvim -c PackerSync -c 'sleep 5' -c qa --headless
+#
+# golangIDE version
+#
+RUN nvim --headless -c 'PackerSync' -c qall
+
+# github post version
+#RUN nvim -c PackerSync -c 'sleep 5' -c qa --headless
 
 CMD ["/bin/ash"]

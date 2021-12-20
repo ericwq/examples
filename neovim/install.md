@@ -24,6 +24,14 @@ client:
 ssh ide@localhost -p 50001
 ```
 
+## NvChad
+
+- [NvChad](https://github.com/siduck76/NvChad)
+- [Lua in Y minutes](https://learnxinyminutes.com/docs/lua/)
+- [Lua Quick Guide](https://github.com/medwatt/Notes/blob/main/Lua/Lua_Quick_Guide.ipynb)
+- [Lua 5.4 Reference Manual](https://www.lua.org/manual/5.4/)
+- [Lua 简介](https://www.kancloud.cn/wizardforcel/w3school-lua/99412)
+
 ## tmux in container
 - [container](https://stackoverflow.com/questions/51809181/how-to-run-tmux-inside-a-docker-container/51814791)
 - [tmux seesion](https://stackoverflow.com/questions/65674604/docker-start-tmux-session-inside-of-dockerfile)
