@@ -15,12 +15,13 @@ RUN apk add git nodejs neovim ripgrep alpine-sdk --update
 RUN apk add tmux colordiff curl tzdata htop fzf go --update
 
 ENV HOME /home/ide
-ENV GOPATH $HOME/go
+ENV GOPATH /go
 
 # Create user/group 
 # ide/develop
 #
 RUN addgroup develop && adduser -D -h $HOME -s /bin/ash -G develop ide
+RUN mkdir -p $GOPATH && chown -R ide:develop $GOPATH
 
 USER ide:develop
 WORKDIR $HOME
