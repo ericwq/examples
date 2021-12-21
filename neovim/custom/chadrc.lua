@@ -8,6 +8,8 @@ local M = {}
 
 M.ui = {
    theme = "gruvchad",
+   italic_comments = true,
+   transparency =true,
 }
 
 return M

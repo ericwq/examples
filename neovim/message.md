@@ -1,4 +1,3 @@
- => [15/15] RUN  nvim --headless -c 'autocmd User Pa  823.2s
- => => # Cloning packer..
- => => # Packer cloned successfully.
- => => # Press ENTER or type command to continue
+docker build -t golangide:0.7.0 -f nvim.dockerfile .
+
+docker run --rm -ti golangide:0.7.0
