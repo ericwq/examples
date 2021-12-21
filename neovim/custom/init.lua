@@ -36,7 +36,7 @@ hooks.add("install_plugins", function(use)
       --setup =
       --run after this plugin is loaded.
       config = function()
-         require("custom.vista")
+         require("custom.plugins.vista")
       end,
    }
 
