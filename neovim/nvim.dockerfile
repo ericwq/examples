@@ -10,12 +10,13 @@ RUN apk add git nodejs neovim ripgrep alpine-sdk --update
 # mainly go, ccls, tmux, fzf
 #
 # consider add the following pacakges:
-# protoc py3-pip bash ctags ccls 
+# protoc py3-pip bash 
 #
-RUN apk add tmux colordiff curl tzdata htop fzf go --update
+RUN apk add tmux colordiff curl tzdata htop fzf go ctags ccls --update
 
 ENV HOME /home/ide
 ENV GOPATH /go
+ENV PATH=$PATH:$GOPATH/bin
 
 # Create user/group 
 # ide/develop
@@ -25,7 +26,6 @@ RUN mkdir -p $GOPATH && chown -R ide:develop $GOPATH
 
 USER ide:develop
 WORKDIR $HOME
-ENV PATH=$PATH:$GOPATH/bin
 
 # Prepare for the nvim
 RUN mkdir -p $HOME/.config/nvim/lua && mkdir -p $GOPATH
