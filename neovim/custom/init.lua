@@ -10,6 +10,10 @@ local hooks = require "core.hooks"
 -- To add new plugins, use the "setup_mappings" hook,
 
 hooks.add("setup_mappings", function(map)
+
+   -- Vista tag-viewer
+   map('n', '<C-m>', ':Vista!!<CR>', opt)   -- open/close
+
    map("n", "<leader>cc", ":Telescope <CR>", opt)
    map("n", "<leader>q", ":q <CR>", opt)
 end)
@@ -23,7 +27,19 @@ end)
 -- examples below:
 
 hooks.add("install_plugins", function(use)
+
+  -- tagviewer
+  use {
+      'liuchengxu/vista.vim',
+      event = "BufRead",
+      --config = 
+      setup = function()
+         require("custom.vista")
+      end,
+   }
+
 --[[
+
    use {
       "max397574/better-escape.nvim",
       event = "InsertEnter",
