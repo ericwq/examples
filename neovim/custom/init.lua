@@ -54,8 +54,5 @@ hooks.add("install_plugins", function(use)
 ]]
 end)
 
--- try to call the customized treesitter
-pcall(require,"custom.treesitter")
-
 -- try to call the customized provider
 pcall(require,"custom.provider")
