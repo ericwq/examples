@@ -32,8 +32,10 @@ hooks.add("install_plugins", function(use)
   use {
       'liuchengxu/vista.vim',
       event = "BufRead",
-      --config = 
-      setup = function()
+      --run before this plugin is loaded.
+      --setup =
+      --run after this plugin is loaded.
+      config = function()
          require("custom.vista")
       end,
    }
