@@ -23,6 +23,7 @@ end)
 -- examples below:
 
 hooks.add("install_plugins", function(use)
+--[[
    use {
       "max397574/better-escape.nvim",
       event = "InsertEnter",
@@ -32,6 +33,7 @@ hooks.add("install_plugins", function(use)
       "user or orgname/reponame",
       --further packer options
    }
+]]
 end)
 
 -- NOTE: we heavily suggest using Packer's lazy loading (with the 'event' field)

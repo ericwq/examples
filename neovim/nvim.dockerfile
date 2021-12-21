@@ -46,23 +46,26 @@ COPY --chown=ide:develop ./vimrc 		$HOME/.config/nvim/vimrc
 COPY --chown=ide:develop ./yank 		$GOPATH/bin/yank
 RUN chmod +x $GOPATH/bin/yank
 
+# Install packer.vim
+# PackerSync command will install packer.vim automaticlly, while the
+# installation  will stop to wait for user <Enter> input.
+# So we install packer manually.
+# https://github.com/wbthomason/packer.nvim
+#
+RUN git clone --depth 1 https://github.com/wbthomason/packer.nvim \
+	~/.local/share/nvim/site/pack/packer/start/packer.nvim
+
 # The neovim configuration
 # based on https://github.com/NvChad/NvChad
 #
 COPY --chown=ide:develop ./v3/nvim/init.lua	$HOME/.config/nvim/
 COPY --chown=ide:develop ./v3/nvim/lua		$HOME/.config/nvim/lua
+COPY --chown=ide:develop ./v3/nvim/custom	$HOME/.config/nvim/lua/custom
 
 # TODO: Install the packer plugins
 # https://github.com/wbthomason/packer.nvim/issues/502
 #
 # NvChad version
-#RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
-#
-# golangIDE version
-#
-RUN nvim --headless -c 'PackerSync' -c qall
-
-# github post version
-#RUN nvim -c PackerSync -c 'sleep 5' -c qa --headless
+RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 
 CMD ["/bin/ash"]
