@@ -105,7 +105,7 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 - [Key mappings? - which-key.nvim](https://github.com/folke/which-key.nvim)
 - [LuaSnip](https://github.com/L3MON4D3/LuaSnip)
 - [NvimTree](https://github.com/kyazdani42/nvim-tree.lua)
-- [Treesitter](https://tree-sitter.github.io/tree-sitter/)
+- [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter)
 - [Treesitter - romgrk/nvim-treesitter-context](https://github.com/romgrk/nvim-treesitter-context)
 - [LSP - nvim-lspconfig](https://github.com/neovim/nvim-lspconfig)
 - [LSP - nvim-cmp](https://github.com/hrsh7th/nvim-cmp)
