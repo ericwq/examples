@@ -23,3 +23,9 @@
 " loing to the containter
 % docker exec -u 0 -it nvide ash
 % docker exec -u ide -it nvide ash
+
+    use {
+-      "famiu/feline.nvim",
++      'feline-nvim/feline.nvim', tag = 'v0.3.3',
+       disable = not plugin_settings.status.feline,
+
