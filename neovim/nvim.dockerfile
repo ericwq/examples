@@ -17,6 +17,7 @@ RUN apk add tmux colordiff curl tzdata htop fzf go ctags ccls --update
 ENV HOME /home/ide
 ENV GOPATH /go
 ENV PATH=$PATH:$GOPATH/bin
+ENV ENV=$HOME/.profile
 
 # Create user/group 
 # ide/develop
@@ -33,8 +34,11 @@ RUN mkdir -p $HOME/.config/nvim/lua && mkdir -p $GOPATH
 # Install go language server
 RUN go install golang.org/x/tools/gopls@latest
 
-# TODO: The source script
+# The source script
 # https://hhoeflin.github.io/2020/08/19/bash-in-docker/
+# https://unix.stackexchange.com/questions/176027/ash-profile-configuration-file
+#
+# ENV=$HOME/.profile
 #
 COPY --chown=ide:develop ./profile 		$HOME/.profile
 
