@@ -1,3 +1,6 @@
+# NOTICE: git clone https://github.com/NvChad/NvChad.git
+# before build image with this dockerfile
+#
 FROM alpine:edge
 LABEL maintainer="ericwq057@qq.com"
 
@@ -14,7 +17,7 @@ RUN apk add git nodejs neovim ripgrep alpine-sdk --update
 #
 RUN apk add tmux colordiff curl tzdata htop fzf go ctags ccls --update
 
-ENV HOME /home/ide
+ENV HOME=/home/ide
 ENV GOPATH /go
 ENV PATH=$PATH:$GOPATH/bin
 ENV ENV=$HOME/.profile
@@ -65,9 +68,11 @@ RUN git clone --depth 1 https://github.com/wbthomason/packer.nvim \
 # The neovim configuration
 # based on https://github.com/NvChad/NvChad
 #
-COPY --chown=ide:develop ./v3/nvim/init.lua	$HOME/.config/nvim/
-COPY --chown=ide:develop ./v3/nvim/lua		$HOME/.config/nvim/lua
+
+COPY --chown=ide:develop ./NvChad/init.lua	$HOME/.config/nvim/
+COPY --chown=ide:develop ./NvChad/lua		$HOME/.config/nvim/lua
 COPY --chown=ide:develop ./custom		$HOME/.config/nvim/lua/custom
+
 
 # Install the packer plugins
 # https://github.com/wbthomason/packer.nvim/issues/502
