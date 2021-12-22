@@ -7,6 +7,11 @@ local M = {}
 -- example of changing theme:
 
 M.plugins = {
+   options = {
+      lspconfig = {
+         setup_lspconf = "custom.plugins.lspconfig",
+      },
+   },
    default_plugin_config_replace = {
       nvim_treesitter = "custom.plugins.treesitter",
    },

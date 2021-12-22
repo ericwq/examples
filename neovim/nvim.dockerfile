@@ -52,6 +52,7 @@ RUN chmod +x $GOPATH/bin/yank
 # So we install packer manually.
 #
 # we also move it to 'opt' directory instead of 'start' directory
+# because NvChad install packer in 'opt' directory
 # https://github.com/wbthomason/packer.nvim
 #
 RUN git clone --depth 1 https://github.com/wbthomason/packer.nvim \
@@ -64,7 +65,7 @@ COPY --chown=ide:develop ./v3/nvim/init.lua	$HOME/.config/nvim/
 COPY --chown=ide:develop ./v3/nvim/lua		$HOME/.config/nvim/lua
 COPY --chown=ide:develop ./custom		$HOME/.config/nvim/lua/custom
 
-# TODO: Install the packer plugins
+# Install the packer plugins
 # https://github.com/wbthomason/packer.nvim/issues/502
 #
 # NvChad version

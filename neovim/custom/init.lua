@@ -55,4 +55,4 @@ hooks.add("install_plugins", function(use)
 end)
 
 -- try to call the customized provider
-pcall(require,"custom.provider")
+pcall(require,"custom.plugins.provider")

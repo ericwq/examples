@@ -40,6 +40,7 @@ ssh ide@localhost -p 50001
 - [tmux in practice: integration with the system clipboard](https://medium.com/free-code-camp/tmux-in-practice-integration-with-system-clipboard-bcd72c62ff7b)
 - [Getting started with Tmux](https://linuxize.com/post/getting-started-with-tmux/)
 - [A Quick and Easy Guide to tmux](https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/)
+- [Making tmux Pretty and Usable - A Guide to Customizing your tmux.conf](https://www.hamvocke.com/blog/a-guide-to-customizing-your-tmux-conf/)
 
 1. copy .vimrc.
 2. copy yank to PAHT and chmod +x for it.

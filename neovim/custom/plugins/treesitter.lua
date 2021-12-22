@@ -6,7 +6,7 @@ end
 
 ts_config.setup {
    -- one of "all", "maintained" (parsers with maintainers), or a list of languages
-   ensure_installed = {"go", "c", "cpp", "yaml", "lua", "json", "dockerfile", "markdown", "javascript"},
+   ensure_installed = {"go", "c", "cpp", "yaml", "lua", "json", "dockerfile", "markdown"},
    sync_install = false, -- install languages synchronously (only applied to `ensure_installed`)
    --ignore_install = { "javascript" }, -- List of parsers to ignore installing
    highlight = {
