@@ -7,6 +7,9 @@ local M = {}
 -- example of changing theme:
 
 M.plugins = {
+   status = {
+      dashboard = true,
+   },
    options = {
       lspconfig = {
          setup_lspconf = "custom.plugins.lspconfig",
