@@ -2,7 +2,7 @@
 -- see: https://github.com/wbthomason/packer.nvim
 -- https://nvchad.github.io/config/walkthrough
 
--- source a vimscript file
+-- source a vimscript file for clipboard support
 vim.cmd('source ~/.config/nvim/vimrc')
 
 -----------------------------------------------------------

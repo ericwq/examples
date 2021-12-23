@@ -1,4 +1,4 @@
--- This is an example init file , its supposed to be placed in /lua/custom dir
+-- This is the init file , its supposed to be placed in /lua/custom dir
 -- lua/custom/init.lua
 
 -- This is where your custom modules and plugins go.
@@ -21,6 +21,7 @@ end)
 -- NOTE : opt is a variable  there (most likely a table if you want multiple options),
 -- you can remove it if you dont have any custom options
 
+
 -- Install plugins
 -- To add new plugins, use the "install_plugin" hook,
 
@@ -40,18 +41,6 @@ hooks.add("install_plugins", function(use)
       end,
    }
 
---[[
-
-   use {
-      "max397574/better-escape.nvim",
-      event = "InsertEnter",
-   }
-
-   use {
-      "user or orgname/reponame",
-      --further packer options
-   }
-]]
 end)
 
 -- try to call the customized provider
