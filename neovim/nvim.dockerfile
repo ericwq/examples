@@ -37,6 +37,10 @@ RUN mkdir -p $HOME/.config/nvim/lua && mkdir -p $GOPATH
 # Install go language server
 RUN go install golang.org/x/tools/gopls@latest
 
+# Install golangci-lint
+# https://golangci-lint.run/usage/install/
+# RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
+
 # The source script
 # https://hhoeflin.github.io/2020/08/19/bash-in-docker/
 # https://unix.stackexchange.com/questions/176027/ash-profile-configuration-file
