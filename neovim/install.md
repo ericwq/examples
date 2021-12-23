@@ -31,6 +31,17 @@ ssh ide@localhost -p 50001
 - [Lua Quick Guide](https://github.com/medwatt/Notes/blob/main/Lua/Lua_Quick_Guide.ipynb)
 - [Lua 5.4 Reference Manual](https://www.lua.org/manual/5.4/)
 - [Lua 简介](https://www.kancloud.cn/wizardforcel/w3school-lua/99412)
+- [Text to Image](http://patorjk.com/software/taag/#p=display&f=Roman&t=NVIDE)
+
+```
+ooooo      ooo oooooo     oooo ooooo oooooooooo.   oooooooooooo
+`888b.     `8'  `888.     .8'  `888' `888'   `Y8b  `888'     `8
+ 8 `88b.    8    `888.   .8'    888   888      888  888
+ 8   `88b.  8     `888. .8'     888   888      888  888oooo8
+ 8     `88b.8      `888.8'      888   888      888  888    "
+ 8       `888       `888'       888   888     d88'  888       o
+o8o        `8        `8'       o888o o888bood8P'   o888ooooood8
+```
 
 ## tmux in container
 - [container](https://stackoverflow.com/questions/51809181/how-to-run-tmux-inside-a-docker-container/51814791)

@@ -17,6 +17,7 @@ M.plugins = {
    },
    default_plugin_config_replace = {
       nvim_treesitter = "custom.plugins.treesitter",
+      dashboard = "custom.plugins.dashboard",
    },
 }
 
