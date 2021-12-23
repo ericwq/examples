@@ -29,6 +29,12 @@ end)
 
 hooks.add("install_plugins", function(use)
 
+  -- A fast and lua alternative to filetype.vim
+  -- https://github.com/nathom/filetype.nvim
+  -- use ':echo &filetype' to detect the corrrect file type
+  -- use `:set filetype=langname` to set file type.
+  use { "nathom/filetype.nvim" }
+
   -- tagviewer
   use {
       'liuchengxu/vista.vim',
