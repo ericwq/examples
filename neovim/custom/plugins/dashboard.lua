@@ -27,8 +27,8 @@ g.dashboard_custom_section = {
    d = { description = { "洛 New File                  SPC f n" }, command = "DashboardNewFile" },
    e = { description = { "  Bookmarks                 SPC b m" }, command = "Telescope marks" },
    f = { description = { "  Load Last Session         SPC l  " }, command = "SessionLoad" },
-   g = { description = { "  Check health                     " }, command = "checkhealth" },
-   h = { description = { "  Update Plugins                   " }, command = "PackerSync" },
+--   g = { description = { "  Check health                     " }, command = "checkhealth" },
+--   h = { description = { "  Update Plugins                   " }, command = "PackerSync" },
 }
 
 g.dashboard_custom_footer = {

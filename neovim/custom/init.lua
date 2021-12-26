@@ -14,8 +14,10 @@ hooks.add("setup_mappings", function(map)
    -- Vista tag-viewer
    map('n', '<C-m>', ':Vista!!<CR>', opt)   -- open/close
 
-   --map("n", "<leader>cc", ":Telescope <CR>", opt)
-   --map("n", "<leader>q", ":q <CR>", opt)
+   -- Searches for the string under your cursor in your current working directory
+   map("n", "<leader>fs", ":Telescope grep_string<CR>", opt)
+
+   map("n", "<leader>xx", ":q <CR>", opt)
 end)
 
 -- NOTE : opt is a variable  there (most likely a table if you want multiple options),

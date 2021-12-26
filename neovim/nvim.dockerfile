@@ -1,5 +1,8 @@
-# NOTICE: git clone https://github.com/NvChad/NvChad.git
-# before build image with this dockerfile
+#------------------------------ NOTICE ------------------------------
+# please perform the following command before the image build
+# this command must be done in the dockerfile directory.
+#
+# git clone https://github.com/NvChad/NvChad.git
 #
 FROM alpine:edge
 LABEL maintainer="ericwq057@qq.com"
@@ -7,15 +10,17 @@ LABEL maintainer="ericwq057@qq.com"
 # This is the base pacakges for neovim 
 # https://github.com/NvChad/NvChad
 #
-RUN apk add git nodejs neovim ripgrep alpine-sdk --update
+# why we need nodejs?
+#
+RUN apk add git neovim neovim-doc tree-sitter-cli ripgrep fzf fd ctags alpine-sdk --update
 
-# additional pacakges for golang IDE
-# mainly go, ccls, tmux, fzf
+# additional pacakges for the IDE
+# mainly go, ccls, tmux
 #
-# consider add the following pacakges:
-# protoc py3-pip bash 
+# consider to add the following pacakges:
+# py3-pip bash
 #
-RUN apk add tmux colordiff curl tzdata htop fzf go ctags ccls --update
+RUN apk add tmux colordiff curl tzdata htop go ccls protoc --update
 
 ENV HOME=/home/ide
 ENV GOPATH /go
