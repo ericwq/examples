@@ -10,9 +10,10 @@ LABEL maintainer="ericwq057@qq.com"
 # This is the base pacakges for neovim 
 # https://github.com/NvChad/NvChad
 #
-# why we need nodejs?
+# tree-sitter needs tree-sitter-cli, nodejs
+# telscope needs ripgrep, fzf, fd
 #
-RUN apk add git neovim neovim-doc tree-sitter-cli ripgrep fzf fd ctags alpine-sdk --update
+RUN apk add git neovim neovim-doc tree-sitter-cli nodejs ripgrep fzf fd ctags alpine-sdk --update
 
 # additional pacakges for the IDE
 # mainly go, ccls, tmux
