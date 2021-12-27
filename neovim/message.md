@@ -1,6 +1,7 @@
 " build it
 % docker build -t nvide:0.7.0 -f nvim.dockerfile .
 % docker build --progress plain -t nvide:0.7.0 -f nvim.dockerfile .
+% docker build --no-cache --progress plain -t nvide:0.7.0 -f nvim.dockerfile .
 
 " dryrun the container
 % docker run --rm -ti nvide:0.7.0
