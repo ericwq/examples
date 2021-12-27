@@ -35,7 +35,10 @@ hooks.add("install_plugins", function(use)
   -- https://github.com/nathom/filetype.nvim
   -- use ':echo &filetype' to detect the corrrect file type
   -- use `:set filetype=langname` to set file type.
-  use { "nathom/filetype.nvim" }
+  use {
+      'nathom/filetype.nvim',
+      event = "VimEnter",
+  }
 
   -- tagviewer
   use {
