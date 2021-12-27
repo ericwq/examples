@@ -23,10 +23,27 @@ RUN apk add git neovim neovim-doc tree-sitter-cli nodejs ripgrep fzf fd ctags al
 #
 RUN apk add tmux colordiff curl tzdata htop go ccls protoc --update
 
+
+# packages for null-ls
+# https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md
+# luarocks py3-pip
+RUN apk add npm --update
+
 ENV HOME=/home/ide
 ENV GOPATH /go
 ENV PATH=$PATH:$GOPATH/bin
 ENV ENV=$HOME/.profile
+
+# Install null-ls source
+# https://github.com/fsouza/prettierd
+# https://github.com/mpeterv/luacheck
+# https://github.com/Koihik/LuaFormatter
+RUN npm install -g @fsouza/prettierd
+# https://github.com/amperser/proselint
+#RUN pip install proselint
+
+#RUN    luarocks install luacheck
+#RUN    luarocks install --server=https://luarocks.org/dev luaformatter
 
 # Create user/group 
 # ide/develop
@@ -40,12 +57,15 @@ WORKDIR $HOME
 # Prepare for the nvim
 RUN mkdir -p $HOME/.config/nvim/lua && mkdir -p $GOPATH
 
-# Install go language server
-RUN go install golang.org/x/tools/gopls@latest
-
-# Install golangci-lint
+# Install go language server and
+# Install null-ls source: goimports, golangci-lint
+#
 # https://golangci-lint.run/usage/install/
-# RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
+RUN go install golang.org/x/tools/gopls@latest && \
+    go install golang.org/x/tools/cmd/goimports@latest && \
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+    go clean -cache -modcache -testcache && \
+    rm -rf $GOPATH/src/*
 
 # The source script
 # https://hhoeflin.github.io/2020/08/19/bash-in-docker/
