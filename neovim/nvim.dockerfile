@@ -116,5 +116,5 @@ RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 # See :h packages
 # https://github.com/wbthomason/packer.nvim/issues/237
 #
-RUN nvim --headless -c 'packadd nvim-treesitter' -c 'TSInstallSync yaml lua json dockerfile markdown' +qall
+RUN nvim --headless -c 'packadd nvim-treesitter' -c 'TSInstallSync go c cpp yaml lua json dockerfile markdown' +qall
 CMD ["/bin/ash"]
