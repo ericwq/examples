@@ -3,12 +3,21 @@ local b = null_ls.builtins
 
 local sources = {
 
+   -- others
    b.formatting.prettierd.with { filetypes = { "html", "markdown", "css" ,"yaml", "json", "javascript" } },
+
+   -- go
    b.formatting.goimports,
    b.formatting.gofmt,
+   b.diagnostics.golangci_lint,
 
-   b.diagnostics.proselint.with {diagnostics_format = "#{m} [#{c}]"},
+   -- english text
+   b.diagnostics.proselint.with { diagnostics_format = "#{m} [#{c}]" },
    b.completion.spell,
+
+   -- c/c++
+   b.formatting.clang_format
+   b.diagnostics.cppcheck,
 
 --[[
    -- Lua

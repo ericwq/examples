@@ -23,16 +23,14 @@ RUN apk add git neovim neovim-doc tree-sitter-cli nodejs ripgrep fzf fd ctags al
 # https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md
 # proselint (null-ls) depends on py3-pip 
 # prettierd (null-ls) depends on npm
+# clang-format (null-ls) depends on clang-dev
+# cppcheck (null-ls) depends on cppcheck
 #
-RUN apk add tmux colordiff curl tzdata htop go ccls protoc py3-pip npm --update
+RUN apk add tmux colordiff curl tzdata htop go ccls protoc py3-pip npm clang-dev cppcheck --update
 
 # https://github.com/fsouza/prettierd
 #
 RUN npm install -g @fsouza/prettierd
-
-# packages for null-ls
-# luarocks py3-pip
-# RUN apk add npm --update
 
 ENV HOME=/home/ide
 ENV GOPATH /go
