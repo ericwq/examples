@@ -22,6 +22,11 @@
         --mount type=bind,source=/Users/qiwang/dev,target=/home/ide/develop \
         nvide:0.7.0
 
+% docker run --rm -ti -h nvide --env TZ=Asia/Shanghai --name nvide \
+        --mount source=proj-vol,target=/home/ide/proj \
+        --mount type=bind,source=/Users/qiwang/dev,target=/home/ide/develop \
+        nvide:0.7.0
+
 " loing to the containter
 % docker exec -u 0 -it nvide ash
 % docker exec -u ide -it nvide ash

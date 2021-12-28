@@ -8,27 +8,20 @@ local hooks = require "core.hooks"
 
 -- MAPPINGS
 -- To add new plugins, use the "setup_mappings" hook,
-
 hooks.add("setup_mappings", function(map)
 
    -- Vista tag-viewer
    map('n', '<C-m>', ':Vista!!<CR>', opt)   -- open/close
-
    -- Searches for the string under your cursor in your current working directory
    map("n", "<leader>fs", ":Telescope grep_string<CR>", opt)
-
    map("n", "<leader>xx", ":q <CR>", opt)
 end)
-
 -- NOTE : opt is a variable  there (most likely a table if you want multiple options),
 -- you can remove it if you dont have any custom options
 
 
 -- Install plugins
 -- To add new plugins, use the "install_plugin" hook,
-
--- examples below:
-
 hooks.add("install_plugins", function(use)
 
   -- A fast and lua alternative to filetype.vim
@@ -49,6 +42,16 @@ hooks.add("install_plugins", function(use)
       --run after this plugin is loaded.
       config = function()
          require("custom.plugins.vista")
+      end,
+   }
+
+   -- null-ls
+   use {
+      "jose-elias-alvarez/null-ls.nvim",
+      after = "nvim-lspconfig",
+      requires = { "nvim-lua/plenary.nvim" },
+      config = function()
+         require("custom.plugins.null-ls").setup()
       end,
    }
 

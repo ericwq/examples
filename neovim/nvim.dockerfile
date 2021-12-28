@@ -10,38 +10,38 @@ LABEL maintainer="ericwq057@qq.com"
 # This is the base pacakges for neovim 
 # https://github.com/NvChad/NvChad
 #
-# tree-sitter needs tree-sitter-cli, nodejs
-# telscope needs ripgrep, fzf, fd
+# tree-sitter depends on tree-sitter-cli, nodejs
+# telscope depends on ripgrep, fzf, fd
+# vista depends on ctags
+# treesitter depends on alpine-sdk
 #
 RUN apk add git neovim neovim-doc tree-sitter-cli nodejs ripgrep fzf fd ctags alpine-sdk --update
 
 # additional pacakges for the IDE
 # mainly go, ccls, tmux
+# 
+# https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md
+# proselint (null-ls) depends on py3-pip 
+# prettierd (null-ls) depends on npm
 #
-# consider to add the following pacakges:
-# py3-pip bash
-#
-RUN apk add tmux colordiff curl tzdata htop go ccls protoc --update
+RUN apk add tmux colordiff curl tzdata htop go ccls protoc py3-pip npm --update
 
+# https://github.com/fsouza/prettierd
+#
+RUN npm install -g @fsouza/prettierd
 
 # packages for null-ls
-# https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md
 # luarocks py3-pip
-RUN apk add npm --update
+# RUN apk add npm --update
 
 ENV HOME=/home/ide
 ENV GOPATH /go
-ENV PATH=$PATH:$GOPATH/bin
+ENV PATH=$PATH:$GOPATH/bin:$HOME/.local/bin
 ENV ENV=$HOME/.profile
 
 # Install null-ls source
-# https://github.com/fsouza/prettierd
 # https://github.com/mpeterv/luacheck
 # https://github.com/Koihik/LuaFormatter
-RUN npm install -g @fsouza/prettierd
-# https://github.com/amperser/proselint
-#RUN pip install proselint
-
 #RUN    luarocks install luacheck
 #RUN    luarocks install --server=https://luarocks.org/dev luaformatter
 
@@ -66,6 +66,10 @@ RUN go install golang.org/x/tools/gopls@latest && \
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
     go clean -cache -modcache -testcache && \
     rm -rf $GOPATH/src/*
+
+# https://github.com/amperser/proselint
+#
+RUN pip3 install proselint
 
 # The source script
 # https://hhoeflin.github.io/2020/08/19/bash-in-docker/
@@ -114,5 +118,5 @@ RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 # See :h packages
 # https://github.com/wbthomason/packer.nvim/issues/237
 #
-RUN nvim --headless -c 'packadd nvim-treesitter' -c 'TSInstallSync go c cpp yaml lua json dockerfile markdown' +qall
+RUN nvim --headless -c 'packadd nvim-treesitter' -c 'TSInstallSync yaml lua json dockerfile markdown' +qall
 CMD ["/bin/ash"]
