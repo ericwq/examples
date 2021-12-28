@@ -112,6 +112,7 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 - [How to set up Neovim 0.5 + Modern plugins (LSP, Treesitter, Fuzzy finder, etc)](https://blog.inkdrop.app/how-to-set-up-neovim-0-5-modern-plugins-lsp-treesitter-etc-542c3d9c9887)
 
 ## [Moving to modern Neovim](https://toroid.org/modern-neovim#update)
+- [Vista.vim](https://github.com/liuchengxu/vista.vim)
 - [Package management - packer](https://github.com/wbthomason/packer.nvim)
 - [Telescope](https://github.com/nvim-telescope/telescope.nvim)
 - [Status line? - lualine](https://github.com/hoob3rt/lualine.nvim)
