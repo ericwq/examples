@@ -5,13 +5,23 @@
 -- Plugin: nvim-treesitter-context
 -- https://github.com/romgrk/nvim-treesitter-context
 
-local context = require "treesitter-context"
+--local context = require "treesitter-context"
 
 local M = {}
+
+local present, context = pcall(require, "treesitter-context")
+if not present then
+   M.setup = function()
+      print "error loading nvim-treesitter-context."
+   end
+   return M
+end
+
 
 M.setup = function()
 --require'treesitter-context'.setup{
   context.setup {
+
   enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
   throttle = true, -- Throttles plugin updates (may improve performance)
   max_lines = 0, -- How many lines the window should span. Values <= 0 mean no limit.

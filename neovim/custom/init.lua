@@ -58,9 +58,9 @@ hooks.add("install_plugins", function(use)
    -- treesitter context
    use {
       'romgrk/nvim-treesitter-context',
-      event = "BufRead",
+      after = "nvim-treesitter",
       config = function()
-         require("custom.plugins.nvim-treesitter-context").setup()
+         require("custom.plugins.treesitter-context").setup()
       end,
    }
 
