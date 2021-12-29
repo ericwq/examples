@@ -18,3 +18,7 @@ vim.g.python3_host_prog       = '/usr/bin/python3'
 -- https://nvchad.github.io/Extras
 -- https://github.com/nathom/filetype.nvim
 vim.g.did_load_filetypes = 1
+
+-- 500 is suggest by WhichKey.nvim
+-- https://github.com/folke/which-key.nvim
+vim.o.timeoutlen = 300 
