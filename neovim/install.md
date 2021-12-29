@@ -97,6 +97,11 @@ when you run `:checkhealth`, neovim reports
 curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-bit-color.sh | ash
 ```
 ## Guide for neovim and lua
+
+TODO: install lua language server.
+
+- [sumneko lua](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#sumneko_lua)
+- [Build and Run lua language server](https://github.com/sumneko/lua-language-server/wiki/Build-and-Run)
 - [Color scheme - sonokai ](https://github.com/sainnhe/sonokai)
 - [Neovim 0.5 features and the switch to init.lua](https://oroques.dev/notes/neovim-init/)
 - [LSP- go language server](https://github.com/golang/tools/tree/master/gopls)
