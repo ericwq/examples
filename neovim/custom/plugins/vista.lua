@@ -45,12 +45,13 @@ g["vista#renderer#enable_icons"] = 1
 -- Change some default icons
 --- see: https://github.com/slavfox/Cozette/blob/master/img/charmap.txt
 --[[
-g["vista#renderer#icons"] = {
-  ['function']  = '\u0192' ,
-  ['variable']  = '\uf00d' ,
-  ['prototype'] = '\uf013' ,
-  ['macro']     = '\uf00b' ,
+local t ={
+["function"]  = "\u0192"
+["variable"]  = "\uf00d"
+["prototype"] = "\uf013"
+["macro"]     = "\uf00b"
 }
+g["vista#renderer#icons"] = t
 --]]
 
 cmd [[

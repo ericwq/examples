@@ -17,7 +17,7 @@ local sources = {
    b.diagnostics.golangci_lint.with({ diagnostics_format = "[#{c}] #{m} (#{s})", }),
 
    -- english text
-   b.diagnostics.proselint.with({ diagnostics_format = "[#{c}] #{m} (#{s})", }),
+   b.diagnostics.proselint.with({ diagnostics_format = "(#{s}) #{m}", }),
    b.completion.spell,
 
    -- c/c++

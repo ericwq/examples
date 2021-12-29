@@ -60,7 +60,7 @@ hooks.add("install_plugins", function(use)
       'romgrk/nvim-treesitter-context',
       event = "BufRead",
       config = function()
-         require("custom.plugins.nvim-treesitter-context")
+         require("custom.plugins.nvim-treesitter-context").setup()
       end,
    }
 
