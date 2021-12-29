@@ -63,6 +63,7 @@ RUN mkdir -p $HOME/.config/nvim/lua && mkdir -p $GOPATH
 RUN go install golang.org/x/tools/gopls@latest && \
     go install golang.org/x/tools/cmd/goimports@latest && \
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+    go install github.com/jstemmer/gotags@latest && \
     go clean -cache -modcache -testcache && \
     rm -rf $GOPATH/src/*
 

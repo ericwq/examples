@@ -33,9 +33,14 @@ g.vista_executive_for = {
    rust = "nvim_lsp",
    c = "nvim_lsp",
    cpp = "nvim_lsp",
-   go = "nvim_lsp",
+   go = "gotags",
 }
 --]]
+
+g.vista_ctags_cmd = {
+  go = 'gotags -sort -slient'
+}
+
 -- Ensure you have installed some decent font to show these pretty symbols,
 --- then you can enable icon for the kind.
 g["vista#renderer#enable_icons"] = 1
