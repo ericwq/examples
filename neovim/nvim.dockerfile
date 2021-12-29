@@ -25,12 +25,13 @@ RUN apk add git neovim neovim-doc tree-sitter-cli nodejs ripgrep fzf fd ctags al
 # prettierd (null-ls) depends on npm
 # clang-format (null-ls) depends on clang-dev
 # cppcheck (null-ls) depends on cppcheck
+# clangd depends on clang-dev
 #
-RUN apk add tmux colordiff curl tzdata htop go ccls protoc py3-pip npm clang-dev cppcheck --update
+RUN apk add tmux colordiff curl tzdata htop go protoc py3-pip npm clang-dev cppcheck --update
 
 # https://github.com/fsouza/prettierd
 #
-RUN npm install -g @fsouza/prettierd
+RUN npm install -g @fsouza/prettierd neovim
 
 ENV HOME=/home/ide
 ENV GOPATH /go
@@ -67,7 +68,7 @@ RUN go install golang.org/x/tools/gopls@latest && \
 
 # https://github.com/amperser/proselint
 #
-RUN pip3 install proselint
+RUN pip3 install proselint pynvim
 
 # The source script
 # https://hhoeflin.github.io/2020/08/19/bash-in-docker/

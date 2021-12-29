@@ -14,11 +14,10 @@ M.setup_lsp = function(attach, capabilities)
    -- lspservers with default config
    -- https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
 
-   local servers = { "gopls", "ccls" }
+   local servers = { "gopls", "clangd" }
 
    -- Set settings for language servers below
    --
-   -- tsserver settings
    local ts_settings = function(client)
      client.resolved_capabilities.document_formatting = false
      ts_settings(client)
@@ -35,6 +34,7 @@ M.setup_lsp = function(attach, capabilities)
       }
    end
 --[[
+--https://github-wiki-see.page/m/jose-elias-alvarez/null-ls.nvim/wiki/Avoiding-LSP-formatting-conflicts
    -- typescript
 
  lspconfig.tsserver.setup {

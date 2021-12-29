@@ -14,15 +14,16 @@ local sources = {
    -- go
    b.formatting.goimports,
    b.formatting.gofmt,
-   b.diagnostics.golangci_lint.with({ diagnostics_format = "[#{c}] #{m} (#{s})", }),
+   b.diagnostics.golangci_lint.with({ diagnostics_format = "(#{s}) #{m}", }),
 
    -- english text
    b.diagnostics.proselint.with({ diagnostics_format = "(#{s}) #{m}", }),
+   -- TOOD not sure how to use it ?
    b.completion.spell,
 
    -- c/c++
    b.formatting.clang_format,
-   b.diagnostics.cppcheck.with({ diagnostics_format = "[#{c}] #{m} (#{s})", }),
+   b.diagnostics.cppcheck.with({ diagnostics_format = "(#{s}) #{m}", }),
 
 --[[
 --
