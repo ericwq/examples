@@ -30,33 +30,14 @@ RUN apk add tmux colordiff curl tzdata htop go protoc --update
 # clang-format (null-ls) depends on clang-dev
 # cppcheck (null-ls) depends on cppcheck
 # clangd depends on clang-dev
-# lua-language-server depends on ninja, bash lua
+# lua-language-server depends on ninja, bash
 #
 RUN apk add py3-pip npm clang-dev cppcheck ninja bash --update
 
-# Install lua5.3, prepare for the luarocks 3.8
-# https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix
-# 1. lua5.3
-# 2. luarocks 3.8
-# 3. luaformatter
-# 4. efm-langserver
-RUN apk add unzip lua5.3-dev cmake --update
-
-# Install luaformatter
-# https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.mkdir
-# https://github.com/Koihik/LuaFormatter
+# language server packages 2
+# luarocks depends readline-dev, lua5.3-dev, cmake, unzip
 #
-# luarocks path --help
-# use the above command to check the lua installation information.
-#
-RUN cd tmp && wget https://luarocks.org/releases/luarocks-3.8.0.tar.gz && \
-    tar zxpf luarocks-3.8.0.tar.gz && \
-    cd luarocks-3.8.0 && \
-    ./configure --lua-version=5.3 && \
-    make && \
-    make install && \
-    luarocks install --server=https://luarocks.org/dev luaformatter && \
-    rm -rf /tmp/luarocks-3.8.0
+RUN apk add unzip cmake readline-dev lua5.3-dev --update
 
 # https://github.com/fsouza/prettierd
 #
@@ -64,14 +45,9 @@ RUN npm install -g @fsouza/prettierd neovim
 
 ENV HOME=/home/ide
 ENV GOPATH /go
+# proselint is installed in $HOME/.local/bin
 ENV PATH=$PATH:$GOPATH/bin:$HOME/.local/bin
 ENV ENV=$HOME/.profile
-
-# Install null-ls source
-# https://github.com/mpeterv/luacheck
-# https://github.com/Koihik/LuaFormatter
-#RUN    luarocks install luacheck
-#RUN    luarocks install --server=https://luarocks.org/dev luaformatter
 
 # Create user/group 
 # ide/develop
@@ -80,10 +56,37 @@ RUN addgroup develop && adduser -D -h $HOME -s /bin/ash -G develop ide
 RUN mkdir -p $GOPATH && chown -R ide:develop $GOPATH
 
 USER ide:develop
-WORKDIR $HOME
+
+# Install luarocks 3.8
+# https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix
+# 1. lua5.3
+# 2. luarocks 3.8
+# 3. luaformatter
+# 4. efm-langserver
+#
+RUN cd /tmp &&\
+    wget https://luarocks.org/releases/luarocks-3.8.0.tar.gz && \
+    tar zxpf luarocks-3.8.0.tar.gz && \
+    cd luarocks-3.8.0 && \
+    ./configure --lua-version=5.3 --prefix=$GOPATH && \
+    make && \
+    make install && \
+    rm -rf /tmp/luarocks-3.8.0
+# luarocks path --help
+# use the above command to check the lua installation information.
 
 # Prepare for the nvim
-RUN mkdir -p $HOME/.config/nvim/lua && mkdir -p $GOPATH
+RUN mkdir -p $HOME/.config/nvim/lua
+
+WORKDIR $HOME
+
+# Install null-ls source
+# https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.mkdir
+# https://github.com/mpeterv/luacheck
+# https://github.com/Koihik/LuaFormatter
+#
+RUN  luarocks install --server=https://luarocks.org/dev luaformatter && \
+     luarocks install luacheck
 
 # Install go language server and
 # Install null-ls source: goimports, golangci-lint
@@ -101,6 +104,21 @@ RUN go install golang.org/x/tools/gopls@latest && \
 #
 RUN pip3 install proselint pynvim
 
+# Install lua-language-server
+# https://github.com/sumneko/lua-language-server/wiki/Build-and-Run
+#
+WORKDIR $GOPATH
+RUN git clone https://github.com/sumneko/lua-language-server && \
+    cd lua-language-server && \
+    git submodule update --init --recursive && \
+    cd 3rd/luamake && \
+    ./compile/install.sh && \
+    cd ../.. && \
+    ./3rd/luamake/luamake rebuild
+
+ENV PATH=$PATH:$GOPATH/lua-language-server/bin
+WORKDIR $HOME
+
 # The source script
 # https://hhoeflin.github.io/2020/08/19/bash-in-docker/
 # https://unix.stackexchange.com/questions/176027/ash-profile-configuration-file
@@ -117,21 +135,6 @@ COPY --chown=ide:develop ./vimrc 		$HOME/.config/nvim/vimrc
 COPY --chown=ide:develop ./yank 		$GOPATH/bin/yank
 RUN chmod +x $GOPATH/bin/yank
 
-# Install lua-language-server
-# https://github.com/sumneko/lua-language-server/wiki/Build-and-Run
-#
-WORKDIR $GOPATH
-RUN git clone https://github.com/sumneko/lua-language-server && \
-    cd lua-language-server && \
-    git submodule update --init --recursive && \
-    cd 3rd/luamake && \
-    ./compile/install.sh && \
-    cd ../.. && \
-    ./3rd/luamake/luamake rebuild
-
-ENV PATH=$PATH:$GOPATH/lua-language-server/bin
-
-WORKDIR $HOME
 # Install packer.vim
 # PackerSync command will install packer.vim automaticlly, while the
 # installation  will stop to wait for user <Enter> input.

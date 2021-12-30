@@ -35,6 +35,7 @@ M.setup_lsp = function(attach, capabilities)
       }
    end
 --]]
+
 lspconfig.efm.setup {
     init_options = {documentFormatting = true},
     filetypes = {"lua"},
@@ -53,12 +54,12 @@ lspconfig.efm.setup {
 
    --https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#sumneko_lua
    local runtime_path = vim.split(package.path, ';')
-table.insert(runtime_path, "lua/?.lua")
+ table.insert(runtime_path, "lua/?.lua")
 table.insert(runtime_path, "lua/?/init.lua")
 
 lspconfig.sumneko_lua.setup {
         on_attach = function(client, bufnr)
-         client.resolved_capabilities.document_formatting = true
+         client.resolved_capabilities.document_formatting = false
          vim.api.nvim_buf_set_keymap(bufnr, "n", "<space>fm", "<cmd>lua vim.lsp.buf.formatting()<CR>", {})
        end,
   settings = {
