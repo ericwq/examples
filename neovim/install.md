@@ -1,7 +1,9 @@
 # Neovim 0.6 setup
+
 Try to find the better solution for neovim IDE (golang, c, c++, java, lua, html, css, vim script, makrdown, javascript)
 
 ## Base image
+
 ```
 docker pull alpine:edge
 
@@ -12,8 +14,9 @@ alpine:edge
 ```
 
 ## ssh in container
-- [Docker-SSH连接docker容器](https://www.jianshu.com/p/426f0d8e6cbf)
-- [ssh启动错误：no hostkeys available— exiting](https://wangxianggit.github.io/sshd%20no%20hostkeys%20available/)
+
+- [Docker-SSH 连接 docker 容器](https://www.jianshu.com/p/426f0d8e6cbf)
+- [ssh 启动错误：no hostkeys available— exiting](https://wangxianggit.github.io/sshd%20no%20hostkeys%20available/)
 
 ```
 server:
@@ -33,7 +36,7 @@ ssh ide@localhost -p 50001
 - [Lua 简介](https://www.kancloud.cn/wizardforcel/w3school-lua/99412)
 - [Text to Image](http://patorjk.com/software/taag/#p=display&f=Roman&t=NVIDE)
 
-```
+```text
 ooooo      ooo oooooo     oooo ooooo oooooooooo.   oooooooooooo
 `888b.     `8'  `888.     .8'  `888' `888'   `Y8b  `888'     `8
  8 `88b.    8    `888.   .8'    888   888      888  888
@@ -44,6 +47,7 @@ o8o        `8        `8'       o888o o888bood8P'   o888ooooood8
 ```
 
 ## tmux in container
+
 - [container](https://stackoverflow.com/questions/51809181/how-to-run-tmux-inside-a-docker-container/51814791)
 - [tmux seesion](https://stackoverflow.com/questions/65674604/docker-start-tmux-session-inside-of-dockerfile)
 - [Copying to clipboard from tmux and Vim using OSC 52](https://sunaku.github.io/tmux-yank-osc52.html)
@@ -70,9 +74,11 @@ vim.opt.clipboard = 'unnamedplus' -- copy/paste to system clipboard
 ```
 
 ## tmux on alacritty (mac)
+
 ```
 docker container exec -u ide -ti neovim ash
 ```
+
 See [here](https://github.com/tmux/tmux/wiki/Clipboard) for the official tmux clipboard document. For tmux, use the following configuration in `.tmux.conf`,
 
 ```
@@ -85,6 +91,7 @@ For neovim, use the following configuration in `~/.config/nvim/init.lua`
 vim.o.clipboard = 'unnamedplus' -- copy/paste to system clipboard
 vim.opt.clipboard = 'unnamedplus' -- copy/paste to system clipboard
 ```
+
 when you run `:checkhealth`, neovim reports
 
 ```
@@ -93,19 +100,22 @@ when you run `:checkhealth`, neovim reports
 ```
 
 ## true color test:
+
 ```
 curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-bit-color.sh | ash
 ```
+
 ## Guide for neovim and lua
 
 TODO: install lua language server.
 
+- [Setup Neovim for Lua Development](https://www.chrisatmachine.com/Neovim/28-neovim-lua-development/)
 - [sumneko lua](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#sumneko_lua)
 - [Build and Run lua language server](https://github.com/sumneko/lua-language-server/wiki/Build-and-Run)
 - [Color scheme - sonokai ](https://github.com/sainnhe/sonokai)
 - [Neovim 0.5 features and the switch to init.lua](https://oroques.dev/notes/neovim-init/)
 - [LSP- go language server](https://github.com/golang/tools/tree/master/gopls)
-- [学习Neovim全配置，逃离VSCode](https://zhuanlan.zhihu.com/p/434727338)
+- [学习 Neovim 全配置，逃离 VSCode](https://zhuanlan.zhihu.com/p/434727338)
 - [iTerm2](https://sourabhbajaj.com/mac-setup/iTerm/)
 - [Go neovim configuration](https://www.getman.io/posts/programming-go-in-neovim/)
 - [Base neovim configuration](https://github.com/brainfucksec/neovim-lua)
@@ -113,10 +123,11 @@ TODO: install lua language server.
 - [Telescope example](https://gitee.com/sternelee/neovim-nvim/blob/master/init.lua)
 - [clipper](https://github.com/wincent/clipper)
 - [Yank from container](https://stackoverflow.com/questions/43075050/how-to-yank-to-host-clipboard-from-inside-a-docker-container)
-- [打通Neovim与系统剪切板](https://zhuanlan.zhihu.com/p/419472307)
+- [打通 Neovim 与系统剪切板](https://zhuanlan.zhihu.com/p/419472307)
 - [How to set up Neovim 0.5 + Modern plugins (LSP, Treesitter, Fuzzy finder, etc)](https://blog.inkdrop.app/how-to-set-up-neovim-0-5-modern-plugins-lsp-treesitter-etc-542c3d9c9887)
 
 ## [Moving to modern Neovim](https://toroid.org/modern-neovim#update)
+
 - [Vista.vim](https://github.com/liuchengxu/vista.vim)
 - [Package management - packer](https://github.com/wbthomason/packer.nvim)
 - [Telescope](https://github.com/nvim-telescope/telescope.nvim)
@@ -134,6 +145,7 @@ TODO: install lua language server.
 - [Debug? - nvim-dap-ui](https://github.com/rcarriga/nvim-dap-ui)
 
 ## .profile
+
 ```
 $more .profile
 export GOPATH=/go
@@ -155,12 +167,14 @@ alias vi=nvim
 ## docker file
 
 ### apk part
+
 - apk add neovim neovim-doc (30m)
 - apk add git curl tzdata htop (48m)
 - apk add go (538m, 50 packages)
 - apk add tmux (539m, 52 packages)
 
 ### neovim environment and packer
+
 - export HOME=/home/ide
 - export GOPATH=/go
 - mkdir /go
@@ -179,12 +193,15 @@ alias vi=nvim
 - apk add ccls "c/c++ language server need npm" (860 MiB in 64 packages)
 
 for vista
+
 - apk add ctags fzf
 
 ## Telescope
+
 - apk add ripgrep
 
 ## others
+
 -
 - python3 fzf
 - apk add tree-sitter nodejs
