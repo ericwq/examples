@@ -17,17 +17,22 @@ LABEL maintainer="ericwq057@qq.com"
 #
 RUN apk add git neovim neovim-doc tree-sitter-cli nodejs ripgrep fzf fd ctags alpine-sdk --update
 
-# additional pacakges for the IDE
-# mainly go, ccls, tmux
+# additional pacakges
+# mainly go, tmux, htop, protoc
 # 
+RUN apk add tmux colordiff curl tzdata htop go protoc --update
+
+# language server packages
+#
 # https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.md
 # proselint (null-ls) depends on py3-pip 
 # prettierd (null-ls) depends on npm
 # clang-format (null-ls) depends on clang-dev
 # cppcheck (null-ls) depends on cppcheck
 # clangd depends on clang-dev
+# lua-language-server depends on ninja, bash lua
 #
-RUN apk add tmux colordiff curl tzdata htop go protoc py3-pip npm clang-dev cppcheck --update
+RUN apk add py3-pip npm clang-dev cppcheck ninja bash lua --update
 
 # https://github.com/fsouza/prettierd
 #
@@ -87,6 +92,21 @@ COPY --chown=ide:develop ./vimrc 		$HOME/.config/nvim/vimrc
 COPY --chown=ide:develop ./yank 		$GOPATH/bin/yank
 RUN chmod +x $GOPATH/bin/yank
 
+# Install lua-language-server
+# https://github.com/sumneko/lua-language-server/wiki/Build-and-Run
+#
+WORKDIR $GOPATH
+RUN git clone https://github.com/sumneko/lua-language-server && \
+    cd lua-language-server && \
+    git submodule update --init --recursive && \
+    cd 3rd/luamake && \
+    ./compile/install.sh && \
+    cd ../.. && \
+    ./3rd/luamake/luamake rebuild
+
+ENV PATH=$PATH:$GOPATH/lua-language-server/bin
+
+WORKDIR $HOME
 # Install packer.vim
 # PackerSync command will install packer.vim automaticlly, while the
 # installation  will stop to wait for user <Enter> input.

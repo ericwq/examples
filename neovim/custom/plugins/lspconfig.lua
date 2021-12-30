@@ -14,14 +14,14 @@ M.setup_lsp = function(attach, capabilities)
    -- lspservers with default config
    -- https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
 
-   local servers = { "gopls", "clangd" }
+   local servers = { "gopls", "clangd", "sumneko_lua" }
 
    -- Set settings for language servers below
-   --
+
    local ts_settings = function(client)
-     client.resolved_capabilities.document_formatting = false
-     ts_settings(client)
-   end  
+     client.resolved_capabilities.document_formatting = true
+     --ts_settings(client)
+   end
 
    for _, lsp in ipairs(servers) do
       lspconfig[lsp].setup {
@@ -33,6 +33,40 @@ M.setup_lsp = function(attach, capabilities)
          },
       }
    end
+
+   --https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#sumneko_lua
+   local runtime_path = vim.split(package.path, ';')
+table.insert(runtime_path, "lua/?.lua")
+table.insert(runtime_path, "lua/?/init.lua")
+
+lspconfig.sumneko_lua.setup {
+        on_attach = function(client, bufnr)
+         client.resolved_capabilities.document_formatting = true
+         vim.api.nvim_buf_set_keymap(bufnr, "n", "<space>fm", "<cmd>lua vim.lsp.buf.formatting()<CR>", {})
+       end,
+  settings = {
+    Lua = {
+      runtime = {
+        -- Tell the language server which version of Lua you're using (most likely LuaJIT in the case of Neovim)
+        version = 'LuaJIT',
+        -- Setup your lua path
+        path = runtime_path,
+      },
+      diagnostics = {
+        -- Get the language server to recognize the `vim` global
+        globals = {'vim'},
+      },
+      workspace = {
+        -- Make the server aware of Neovim runtime files
+        library = vim.api.nvim_get_runtime_file("", true),
+      },
+      -- Do not send telemetry data containing a randomized but unique identifier
+      telemetry = {
+        enable = false,
+      },
+    },
+  },
+}
 --[[
 --https://github-wiki-see.page/m/jose-elias-alvarez/null-ls.nvim/wiki/Avoiding-LSP-formatting-conflicts
    -- typescript
@@ -44,7 +78,7 @@ M.setup_lsp = function(attach, capabilities)
       end,
    }
 
--- the above tsserver config will remvoe the tsserver's inbuilt formatting 
+-- the above tsserver config will remvoe the tsserver's inbuilt formatting
 -- since I use null-ls with denofmt for formatting ts/js stuff.
 -- ]]
 

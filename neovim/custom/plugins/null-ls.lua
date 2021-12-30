@@ -19,7 +19,7 @@ local sources = {
    -- english text
    b.diagnostics.proselint.with({ diagnostics_format = "(#{s}) #{m}", }),
    -- TOOD not sure how to use it ?
-   b.completion.spell,
+   --b.completion.spell,
 
    -- c/c++
    b.formatting.clang_format,
@@ -40,9 +40,10 @@ local sources = {
 local M = {}
 
 M.setup = function()
-   null_ls.setup {
-      debug = true,
+   require("null-ls").setup({
+      --debug = true,
       sources = sources,
+      diagnostics_format = "(#{s}) #{m}",
 
       -- format on save
       on_attach = function(client)
@@ -50,7 +51,7 @@ M.setup = function()
             vim.cmd "autocmd BufWritePre <buffer> lua vim.lsp.buf.formatting_sync()"
          end
       end,
-   }
+   })
 end
 
 return M
