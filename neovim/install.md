@@ -110,6 +110,8 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 TODO: install lua language server.
 
 - [Setup Neovim for Lua Development](https://www.chrisatmachine.com/Neovim/28-neovim-lua-development/)
+- [luarocks.org](https://luarocks.org/)
+- [luarocks at github.com](https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix)
 - [sumneko lua](https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#sumneko_lua)
 - [Build and Run lua language server](https://github.com/sumneko/lua-language-server/wiki/Build-and-Run)
 - [Color scheme - sonokai ](https://github.com/sainnhe/sonokai)
