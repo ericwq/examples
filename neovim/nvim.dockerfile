@@ -32,7 +32,31 @@ RUN apk add tmux colordiff curl tzdata htop go protoc --update
 # clangd depends on clang-dev
 # lua-language-server depends on ninja, bash lua
 #
-RUN apk add py3-pip npm clang-dev cppcheck ninja bash lua --update
+RUN apk add py3-pip npm clang-dev cppcheck ninja bash --update
+
+# Install lua5.3, prepare for the luarocks 3.8
+# https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix
+# 1. lua5.3
+# 2. luarocks 3.8
+# 3. luaformatter
+# 4. efm-langserver
+RUN apk add unzip lua5.3-dev cmake --update
+
+# Install luaformatter
+# https://github.com/jose-elias-alvarez/null-ls.nvim/blob/main/doc/BUILTINS.mkdir
+# https://github.com/Koihik/LuaFormatter
+#
+# luarocks path --help
+# use the above command to check the lua installation information.
+#
+RUN cd tmp && wget https://luarocks.org/releases/luarocks-3.8.0.tar.gz && \
+    tar zxpf luarocks-3.8.0.tar.gz && \
+    cd luarocks-3.8.0 && \
+    ./configure --lua-version=5.3 && \
+    make && \
+    make install && \
+    luarocks install --server=https://luarocks.org/dev luaformatter && \
+    rm -rf /tmp/luarocks-3.8.0
 
 # https://github.com/fsouza/prettierd
 #
@@ -69,6 +93,7 @@ RUN go install golang.org/x/tools/gopls@latest && \
     go install golang.org/x/tools/cmd/goimports@latest && \
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
     go install github.com/jstemmer/gotags@latest && \
+    go install github.com/mattn/efm-langserver@latest && \
     go clean -cache -modcache -testcache && \
     rm -rf $GOPATH/src/*
 

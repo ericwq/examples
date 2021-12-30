@@ -108,6 +108,22 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 ## Guide for neovim and lua
 
 TODO: install lua language server.
+```
+$ apk add alpine-sdk curl bash unzip
+$ apk add lua5.3
+$ wget https://luarocks.org/releases/luarocks-3.8.0.tar.gz
+$ tar zxpf luarocks-3.8.0.tar.gz
+$ cd luarocks-3.8.0
+$ apk add lua5.3-dev
+$ ./configure --lua-version=5.3
+$ make
+$ make install
+
+check the result.
+$ luarocks path --help
+
+$ luarocks install --server=https://luarocks.org/dev luaformatter
+```
 
 - [Setup Neovim for Lua Development](https://www.chrisatmachine.com/Neovim/28-neovim-lua-development/)
 - [luarocks.org](https://luarocks.org/)
