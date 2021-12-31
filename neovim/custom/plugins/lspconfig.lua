@@ -33,6 +33,9 @@ M.setup_lsp = function(attach, capabilities)
       }
    end
 --]]
+    lspconfig.clangd.setup {}
+
+    lspconfig.gopls.setup {}
 
     lspconfig.efm.setup {
         init_options = {documentFormatting = true},
