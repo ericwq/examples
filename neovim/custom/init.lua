@@ -28,6 +28,16 @@ hooks.add("install_plugins", function(use)
     -- use `:set filetype=langname` to set file type.
     use {'nathom/filetype.nvim', event = "VimEnter"}
 
+    -- symbols-outline
+    -- https://github.com/simrat39/symbols-outline.nvim
+    use {
+      'simrat39/symbols-outline.nvim',
+      after = "nvim-lspconfig",
+      config = function()
+        require("custom.plugins.symbols-outline")
+      end
+    }
+
     -- tagviewer
     use {
         'liuchengxu/vista.vim',
