@@ -46,7 +46,7 @@ hooks.add("install_plugins", function(use)
         after = "nvim-lspconfig",
         requires = {"nvim-lua/plenary.nvim"},
         config = function()
-            require("custom.plugins.null-ls").setup()
+            require("custom.plugins.null-ls")
         end
     }
 

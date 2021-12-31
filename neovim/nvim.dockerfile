@@ -100,6 +100,7 @@ RUN go install golang.org/x/tools/gopls@latest && \
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
     go install github.com/jstemmer/gotags@latest && \
     go install github.com/mattn/efm-langserver@latest && \
+    go install mvdan.cc/gofumpt@latest && \
     go clean -cache -modcache -testcache && \
     rm -rf $GOPATH/src/*
 

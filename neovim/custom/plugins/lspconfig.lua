@@ -35,7 +35,18 @@ M.setup_lsp = function(attach, capabilities)
 --]]
     lspconfig.clangd.setup {}
 
-    lspconfig.gopls.setup {}
+    lspconfig.gopls.setup {
+      cmd = {"gopls", "-remote", "auto", "-logfile", "/tmp/gopls.log"},
+      on_attach = attach,
+      capabilities = capabilities,
+      settings = {
+        gopls = {
+          gofumpt = true,
+          usePlaceholders = true,
+          staticcheck = true
+        }
+      }
+    }
 
     lspconfig.efm.setup {
         init_options = {documentFormatting = true},
