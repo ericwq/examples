@@ -12,6 +12,7 @@ hooks.add("setup_mappings", function(map)
     map('n', '<C-m>', ':Vista!!<CR>', opt) -- open/close
     -- Searches for the string under your cursor in your current working directory
     map("n", "<leader>fs", ":Telescope grep_string<CR>", opt)
+    map("n", "<leader>ft", ":Telescope treesitter<CR>")
     -- conflict with the map <leader>x
     -- map("n", "<leader>xx", ":q <CR>", opt)
 end)

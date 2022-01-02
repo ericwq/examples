@@ -13,8 +13,8 @@ local sources = {
     b.formatting.prettierd.with({filetypes = {"html", "markdown", "css", "yaml", "json", "javascript"}}),
 
     -- go
-    b.formatting.goimports,
-    b.formatting.gofmt,
+    --b.formatting.goimports,
+    --b.formatting.gofmt,
     b.diagnostics.golangci_lint.with({diagnostics_format = "(#{s}) #{m}"}),
 
     -- english text
