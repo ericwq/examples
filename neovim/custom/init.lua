@@ -32,16 +32,18 @@ hooks.add("install_plugins", function(use)
     -- symbols-outline
     -- https://github.com/simrat39/symbols-outline.nvim
     use {
-      'simrat39/symbols-outline.nvim',
-      after = "nvim-lspconfig",
-      config = function()
-        require("custom.plugins.symbols-outline")
-      end
+		'simrat39/symbols-outline.nvim',
+		disable = true,
+		after = "nvim-lspconfig",
+		config = function()
+			require("custom.plugins.symbols-outline")
+		end
     }
 
     -- tagviewer
     use {
         'liuchengxu/vista.vim',
+        disable = true,
         event = "BufRead",
         -- run before this plugin is loaded.
         -- setup =
