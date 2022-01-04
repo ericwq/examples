@@ -75,6 +75,7 @@ hooks.add("install_plugins", function(use)
     -- which-key
     use {
         "folke/which-key.nvim",
+		event = "VimEnter",
         config = function()
             require("which-key").setup {
                 -- your configuration comes here

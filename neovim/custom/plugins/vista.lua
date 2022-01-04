@@ -7,7 +7,7 @@
 
 
 local g = vim.g
-local cmd = vim.cmd
+--local cmd = vim.cmd
 
 g.vista_close_on_jump = 1
 
@@ -48,17 +48,17 @@ g["vista#renderer#enable_icons"] = 1
 
 
 -- Change some default icons
---- see: https://github.com/slavfox/Cozette/blob/master/img/charmap.txt
---[[
-local t ={
-["function"]  = "\u0192"
-["variable"]  = "\uf00d"
-["prototype"] = "\uf013"
-["macro"]     = "\uf00b"
-}
-g["vista#renderer#icons"] = t
---]]
+-- see: https://github.com/slavfox/Cozette/blob/master/img/charmap.txt
+-- https://www.lua.org/manual/5.3/manual.html, search "\u"
 
+g["vista#renderer#icons"] = {
+	['function'] = '\u{0192}',
+	['variable'] = '\u{f00d}',
+	['prototype'] = '\u{f013}',
+	['macro'] = '\u{f00b}',
+}
+
+--[[
 cmd [[
   let g:vista#renderer#icons = {
   \   "function": "\u0192",
@@ -67,3 +67,4 @@ cmd [[
   \   "macro": "\uf00b",
   \ }
 ]]
+--]]
