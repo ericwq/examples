@@ -49,6 +49,9 @@ M.setup_lsp = function(attach, capabilities)
     }
 
     lspconfig.efm.setup {
+        on_attach = attach,
+		capabilities = capabilities,
+		root_dir = lspconfig.util.root_pattern('init.lua', '.gitignore'),
         init_options = {documentFormatting = true},
         filetypes = {"lua"},
         settings = {
@@ -71,6 +74,8 @@ M.setup_lsp = function(attach, capabilities)
 
     lspconfig.sumneko_lua.setup {
         on_attach = attach,
+		capabilities = capabilities,
+		root_dir = lspconfig.util.root_pattern('init.lua', '.gitignore'),
         -- function(client, bufnr)
         --     client.resolved_capabilities.document_formatting = false
         --     vim.api.nvim_buf_set_keymap(bufnr, "n", "<space>fm", "<cmd>lua vim.lsp.buf.formatting()<CR>", {})
@@ -79,7 +84,7 @@ M.setup_lsp = function(attach, capabilities)
             Lua = {
                 runtime = {
                     -- Tell the language server which version of Lua you're using (most likely LuaJIT in the case of Neovim)
-                    version = 'LuaJIT',
+                    version = 'Lua 5.3',
                     -- Setup your lua path
                     path = runtime_path
                 },
