@@ -34,5 +34,5 @@ g.dashboard_custom_section = {
 g.dashboard_custom_footer = {
    "C/C++ and Golang Integrated Development Environment.",
    "",
-   "           Powered by gopls and ccls.",
+   "      Powered by sumneko_lua, gopls and clangd.",
 }
