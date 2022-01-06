@@ -36,7 +36,8 @@ M.setup_lsp = function(attach, capabilities)
     lspconfig.clangd.setup {}
 
     lspconfig.gopls.setup {
-      cmd = {"gopls", "-remote", "auto", "-logfile", "/tmp/gopls.log"},
+      --cmd = {"gopls", "-remote", "auto", "-logfile", "/tmp/gopls.log"},
+      cmd = {"gopls", "serve"},
       on_attach = attach,
       capabilities = capabilities,
       settings = {
@@ -49,9 +50,9 @@ M.setup_lsp = function(attach, capabilities)
     }
 
     lspconfig.efm.setup {
-        on_attach = attach,
+		on_attach = attach,
 		capabilities = capabilities,
-		root_dir = lspconfig.util.root_pattern('init.lua', '.gitignore'),
+		root_dir = lspconfig.util.root_pattern('.git','init.lua'),
         init_options = {documentFormatting = true},
         filetypes = {"lua"},
         settings = {
@@ -73,9 +74,9 @@ M.setup_lsp = function(attach, capabilities)
     table.insert(runtime_path, "lua/?/init.lua")
 
     lspconfig.sumneko_lua.setup {
-        on_attach = attach,
+		on_attach = attach,
 		capabilities = capabilities,
-		root_dir = lspconfig.util.root_pattern('init.lua', '.gitignore'),
+		root_dir = lspconfig.util.root_pattern('.git', 'init.lua'),
         -- function(client, bufnr)
         --     client.resolved_capabilities.document_formatting = false
         --     vim.api.nvim_buf_set_keymap(bufnr, "n", "<space>fm", "<cmd>lua vim.lsp.buf.formatting()<CR>", {})
