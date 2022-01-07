@@ -1,0 +1,20 @@
+checkhealth telescope
+
+telescope: require("telescope.health").check()
+========================================================================
+## Checking for required plugins
+  - OK: plenary installed.
+  - OK: nvim-treesitter installed.
+
+## Checking external dependencies
+  - OK: rg: found ripgrep 13.0.0 (rev acb790b68c)
+  - OK: fd: found fd 8.3.0
+
+## ===== Installed extensions =====
+
+## Telescope Extension: `terms`
+  - INFO: No healthcheck provided
+
+## Telescope Extension: `themes`
+  - INFO: No healthcheck provided
+
