@@ -125,6 +125,7 @@ $ luarocks path --help
 $ luarocks install --server=https://luarocks.org/dev luaformatter
 ```
 
+- [Customizing Neovim LSP (nvim-lsp)](https://rishabhrd.github.io/jekyll/update/2020/09/19/nvim_lsp_config.html)
 - [Setup Neovim for Lua Development](https://www.chrisatmachine.com/Neovim/28-neovim-lua-development/)
 - [luarocks.org](https://luarocks.org/)
 - [luarocks at github.com](https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix)
