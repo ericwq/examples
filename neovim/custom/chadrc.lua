@@ -11,7 +11,10 @@ M.options = {
 }
 
 M.plugins = {
-    status = {dashboard = true},
+    status = {
+		dashboard = true,
+		colorizer = true,
+	},
     options = {lspconfig = {setup_lspconf = "custom.plugins.lspconfig"}},
     default_plugin_config_replace = {
         nvim_treesitter = "custom.plugins.treesitter",
@@ -21,6 +24,10 @@ M.plugins = {
 }
 
 -- changing theme and UI
-M.ui = {theme = "gruvchad", italic_comments = true, transparency = true}
+M.ui = {
+	theme = "gruvchad",
+	italic_comments = true,
+	transparency = true
+}
 
 return M
