@@ -13,6 +13,14 @@ docker run -it -h neovim --env TZ=Asia/Shanghai  --name neovim \
 alpine:edge
 ```
 
+## After Installation
+
+```
+% go list ./...
+% go mod tidy
+% check ~/.cache/nvim/lsp.log for any error.
+```
+
 ## ssh in container
 
 - [Docker-SSH 连接 docker 容器](https://www.jianshu.com/p/426f0d8e6cbf)
@@ -108,6 +116,7 @@ curl -s https://raw.githubusercontent.com/JohnMorales/dotfiles/master/colors/24-
 ## Guide for neovim and lua
 
 TODO: install lua language server.
+
 ```
 $ apk add alpine-sdk curl bash unzip
 $ apk add lua5.3
