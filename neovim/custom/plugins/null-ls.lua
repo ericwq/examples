@@ -25,6 +25,9 @@ local sources = {
     -- english text
     b.diagnostics.proselint.with({diagnostics_format = "(#{s}) #{m}"}),
 
+	-- lua
+	b.formatting.lua_format,
+
     -- TOOD not sure how to use it ?
     -- b.completion.spell,
 
