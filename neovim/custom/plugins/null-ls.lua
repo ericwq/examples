@@ -8,32 +8,39 @@ local sources = {
     --
     -- should echo 1 if available (and 0 if not)
     -- :echo executable("eslint")
-    --
+
     -- others
     b.formatting.prettierd.with({
 		filetypes = {"html", "markdown", "css", "yaml", "json", "javascript"}
 	}),
 
-    -- go
-    --b.formatting.goimports,
-    --b.formatting.gofmt,
-    b.diagnostics.golangci_lint.with({
-		filetypes ={"go"},
-		diagnostics_format = "(#{s}) #{m}",
-	}),
+	-- go
+    -- b.formatting.goimports,
+    -- b.formatting.gofmt,
+    b.diagnostics.golangci_lint.with({filetypes = {"go"}, diagnostics_format = "(#{s}) #{m}"}),
 
-    -- english text
+	-- english text
     b.diagnostics.proselint.with({diagnostics_format = "(#{s}) #{m}"}),
 
 	-- lua
-	b.formatting.lua_format,
+    b.formatting.lua_format.with({
+        extra_args = {
+			"--column-limit=150",
+			"--no-keep-simple-control-block-one-line",
+			"--no-keep-simple-function-one-line",
+			"--chop-down-table",
+			"--chop_down_kv_table",
+			"--break-after-table-lb",
+			--"--break_after_functiondef_lp",
+        }
+    }),
 
-    -- TOOD not sure how to use it ?
+	-- TOOD not sure how to use it ?
     -- b.completion.spell,
 
-    -- c/c++
+	-- c/c++
     b.formatting.clang_format,
-	b.diagnostics.cppcheck.with({diagnostics_format = "(#{s}) #{m}"})
+    b.diagnostics.cppcheck.with({diagnostics_format = "(#{s}) #{m}"})
 
     --[[
 --
@@ -50,7 +57,7 @@ local sources = {
 require("null-ls").setup({
     debug = false,
     sources = sources,
-    --diagnostics_format = "(#{s}) #{m}",
+    -- diagnostics_format = "(#{s}) #{m}",
 
     -- format on save
     on_attach = function(client)
