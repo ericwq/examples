@@ -58,6 +58,11 @@ ENV ENV=$HOME/.profile
 RUN addgroup develop && adduser -D -h $HOME -s /bin/ash -G develop ide
 RUN mkdir -p $GOPATH && chown -R ide:develop $GOPATH
 
+# go: add missing module
+#
+# RUN cd `go env GOROOT`/src && \
+# 	go mod tidy
+
 USER ide:develop
 WORKDIR $HOME
 
@@ -167,5 +172,6 @@ RUN nvim --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'
 # https://github.com/wbthomason/packer.nvim/issues/237
 #
 RUN nvim --headless -c 'packadd nvim-treesitter' -c 'TSInstallSync go c cpp yaml lua json dockerfile markdown' +qall
+
 
 CMD ["/bin/ash"]
