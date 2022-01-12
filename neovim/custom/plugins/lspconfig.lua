@@ -25,6 +25,10 @@ M.setup_lsp = function(attach, capabilities)
 		capabilities = capabilities,
 		settings = {
 			gopls = {
+				-- https://github.com/golang/tools/blob/master/gopls/doc/settings.md#allowimplicitnetworkaccess-bool
+				-- allowImplicitNetworkAccess disables GOPROXY=off, allowing implicit module downloads rather
+				-- than requiring user action. This option will eventually be removed.
+				allowImplicitNetworkAccess = true,
 				analyses = {
 					unusedparams = true,
 				},
