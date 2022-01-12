@@ -25,13 +25,17 @@ local sources = {
 	-- lua
     b.formatting.lua_format.with({
         extra_args = {
+			"-i",
 			"--column-limit=150",
 			"--no-keep-simple-control-block-one-line",
 			"--no-keep-simple-function-one-line",
 			"--chop-down-table",
 			"--chop_down_kv_table",
+			"--chop_down_parameter",
 			"--break-after-table-lb",
-			--"--break_after_functiondef_lp",
+			"--break_after_functiondef_lp",
+			"--column_table_limit=20",
+			"--extra_sep_at_table_end"
         }
     }),
 
