@@ -11,7 +11,7 @@ local sources = {
 
     -- others
     b.formatting.prettierd.with({
-		filetypes = {"html", "markdown", "css", "yaml", "json", "javascript"}
+		filetypes = {"html", "markdown", "yaml", "json"}
 	}),
 
 	-- go
