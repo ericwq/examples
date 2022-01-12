@@ -78,7 +78,7 @@ RUN cd /tmp &&\
     wget https://luarocks.org/releases/$LUA_ROCKS.tar.gz && \
     tar zxpf $LUA_ROCKS.tar.gz && \
     cd $LUA_ROCKS  && \
-    ./configure --lua-version=5.3 --prefix=$GOPATH && \
+    ./configure --lua-version=5.3 --prefix=$HOME/.local && \
     make && \
     make install && \
     rm -rf /tmp/$LUA_ROCKS
@@ -117,7 +117,7 @@ RUN pip3 install proselint pynvim
 # https://github.com/sumneko/lua-language-server/wiki/Build-and-Run
 # the lua-language-server is installed in $GOPATH
 #
-WORKDIR $GOPATH
+WORKDIR $HOME/.local
 RUN git clone https://github.com/sumneko/lua-language-server && \
     cd lua-language-server && \
     git submodule update --init --recursive && \
@@ -126,7 +126,7 @@ RUN git clone https://github.com/sumneko/lua-language-server && \
     cd ../.. && \
     ./3rd/luamake/luamake rebuild
 
-ENV PATH=$PATH:$GOPATH/lua-language-server/bin
+ENV PATH=$PATH:$HOME/.local/lua-language-server/bin
 WORKDIR $HOME
 
 # Set the environment 
@@ -136,10 +136,10 @@ COPY --chown=ide:develop ./profile 		$HOME/.profile
 # The clipboatd support for vim and tmux
 # https://sunaku.github.io/tmux-yank-osc52.html
 #
-COPY --chown=ide:develop ./tmux.conf 		$HOME/.tmux.conf
+COPY --chown=ide:develop ./tmux.conf 	$HOME/.tmux.conf
 COPY --chown=ide:develop ./vimrc 		$HOME/.config/nvim/vimrc
-COPY --chown=ide:develop ./yank 		$GOPATH/bin/yank
-RUN chmod +x $GOPATH/bin/yank
+COPY --chown=ide:develop ./yank 		$HOME/.local/bin/yank
+RUN chmod +x $HOME/.local/bin/yank
 
 # Install packer.vim
 # PackerSync command will install packer.vim automaticlly, while the
@@ -158,7 +158,7 @@ RUN git clone --depth 1 https://github.com/wbthomason/packer.nvim \
 #
 COPY --chown=ide:develop ./NvChad/init.lua	$HOME/.config/nvim/
 COPY --chown=ide:develop ./NvChad/lua		$HOME/.config/nvim/lua
-COPY --chown=ide:develop ./custom		$HOME/.config/nvim/lua/custom
+COPY --chown=ide:develop ./custom			$HOME/.config/nvim/lua/custom
 
 
 # Install the packer plugins
