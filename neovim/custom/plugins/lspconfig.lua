@@ -19,6 +19,8 @@ M.setup_lsp = function(attach, capabilities)
 		cmd = {
 			"gopls",
 			"serve",
+			"-rpc.trace",
+			"-logfile=auto",
 		},
 		on_attach = attach,
 		-- on_attach = on_attach_vim,
@@ -29,6 +31,7 @@ M.setup_lsp = function(attach, capabilities)
 				-- allowImplicitNetworkAccess disables GOPROXY=off, allowing implicit module downloads rather
 				-- than requiring user action. This option will eventually be removed.
 				allowImplicitNetworkAccess = true,
+				-- experimentalWorkspaceModule = true,
 				analyses = {
 					unusedparams = true,
 				},
