@@ -42,6 +42,8 @@ ENV HOME=/home/ide
 ENV GOPATH /go
 
 # proselint is installed in $HOME/.local/bin
+# luarocks is aldo in $HOME/.local/
+#
 ENV PATH=$PATH:$GOPATH/bin:$HOME/.local/bin
 
 # The source script
@@ -58,18 +60,13 @@ ENV ENV=$HOME/.profile
 RUN addgroup develop && adduser -D -h $HOME -s /bin/ash -G develop ide
 RUN mkdir -p $GOPATH && chown -R ide:develop $GOPATH
 
-# go: add missing module
-#
-# RUN cd `go env GOROOT`/src && \
-# 	go mod tidy
-
 USER ide:develop
 WORKDIR $HOME
 
 # Install luarocks 3.8
 # https://github.com/luarocks/luarocks/wiki/Installation-instructions-for-Unix
 # 1. lua5.3
-# 2. luarocks 3.8
+# 2. luarocks 3.8: is installed in $HOME/.local
 # 3. luaformatter
 # 4. efm-langserver
 #
@@ -115,7 +112,7 @@ RUN pip3 install proselint pynvim
 
 # Install lua-language-server
 # https://github.com/sumneko/lua-language-server/wiki/Build-and-Run
-# the lua-language-server is installed in $GOPATH
+# the lua-language-server is installed in $HOME/.local
 #
 WORKDIR $HOME/.local
 RUN git clone https://github.com/sumneko/lua-language-server && \
