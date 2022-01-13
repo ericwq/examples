@@ -51,26 +51,6 @@ M.setup_lsp = function(attach, capabilities)
 		},
 	}
 
-	--[[
-    lspconfig.efm.setup {
-		on_attach = attach,
-		capabilities = capabilities,
-		root_dir = lspconfig.util.root_pattern('.git'),
-        init_options = {documentFormatting = true},
-        filetypes = {"lua"},
-        settings = {
-            rootMarkers = {".git/"},
-            languages = {
-                lua = {
-                    {
-                        formatCommand = "lua-format -i --no-keep-simple-function-one-line --no-break-after-operator --column-limit=150 --break-after-table-lb",
-                        formatStdin = true
-                    }
-                }
-            }
-        }
-    }
-]]
 	-- https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md#sumneko_lua
 	local runtime_path = vim.split(package.path, ';')
 	table.insert(runtime_path, "lua/?.lua")
@@ -109,7 +89,9 @@ M.setup_lsp = function(attach, capabilities)
 			},
 		},
 	}
-	--[[
+end
+
+--[[
 --https://github-wiki-see.page/m/jose-elias-alvarez/null-ls.nvim/wiki/Avoiding-LSP-formatting-conflicts
    -- typescript
 
@@ -123,7 +105,5 @@ M.setup_lsp = function(attach, capabilities)
 -- the above tsserver config will remvoe the tsserver's inbuilt formatting
 -- since I use null-ls with denofmt for formatting ts/js stuff.
 -- ]]
-
-end
 
 return M
