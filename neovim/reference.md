@@ -34,6 +34,16 @@ alpine:edge
 - [ssh 启动错误：no hostkeys available— exiting](https://wangxianggit.github.io/sshd%20no%20hostkeys%20available/)
 
 ```
+docker build -t nide:0.1 -f nvim-tmux.dockerfile .
+
+docker run -it -d -h ggg --env TZ=Asia/Shanghai -u ide --name ggg -p 8654:22 nide:0.1 bash
+
+ssh ide@localhost -p 8654 -t "tmux a -t golangide"
+
+tmux new-session -s "IDE"  -n "editor" -d "nvim"
+
+tmux  attach-session -t "IDE"
+
 server:
 docker run -d -p 50001:22 --env TZ=Asia/Shanghai -h nvimIDE  --name nvimIDE \
 	nvim:ide /usr/sbin/sshd -D
@@ -50,16 +60,6 @@ ssh ide@localhost -p 50001
 - [Lua 5.4 Reference Manual](https://www.lua.org/manual/5.4/)
 - [Lua 简介](https://www.kancloud.cn/wizardforcel/w3school-lua/99412)
 - [Text to Image](http://patorjk.com/software/taag/#p=display&f=Roman&t=NVIDE)
-
-```text
-ooooo      ooo oooooo     oooo ooooo oooooooooo.   oooooooooooo
-`888b.     `8'  `888.     .8'  `888' `888'   `Y8b  `888'     `8
- 8 `88b.    8    `888.   .8'    888   888      888  888
- 8   `88b.  8     `888. .8'     888   888      888  888oooo8
- 8     `88b.8      `888.8'      888   888      888  888    "
- 8       `888       `888'       888   888     d88'  888       o
-o8o        `8        `8'       o888o o888bood8P'   o888ooooood8
-```
 
 ## tmux in container
 

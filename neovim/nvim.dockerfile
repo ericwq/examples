@@ -42,7 +42,7 @@ ENV HOME=/home/ide
 ENV GOPATH /go
 
 # proselint is installed in $HOME/.local/bin
-# luarocks is aldo in $HOME/.local/
+# luarocks is also installed in $HOME/.local/
 #
 ENV PATH=$PATH:$GOPATH/bin:$HOME/.local/bin
 
@@ -128,14 +128,14 @@ WORKDIR $HOME
 
 # Set the environment 
 #
-COPY --chown=ide:develop ./profile 		$HOME/.profile
+COPY --chown=ide:develop ./conf/profile		$HOME/.profile
 
 # The clipboatd support for vim and tmux
 # https://sunaku.github.io/tmux-yank-osc52.html
 #
-COPY --chown=ide:develop ./tmux.conf 	$HOME/.tmux.conf
-COPY --chown=ide:develop ./vimrc 		$HOME/.config/nvim/vimrc
-COPY --chown=ide:develop ./yank 		$HOME/.local/bin/yank
+COPY --chown=ide:develop ./conf/tmux.conf 	$HOME/.tmux.conf
+COPY --chown=ide:develop ./conf/vimrc 		$HOME/.config/nvim/vimrc
+COPY --chown=ide:develop ./conf/yank 		$HOME/.local/bin/yank
 RUN chmod +x $HOME/.local/bin/yank
 
 # Install packer.vim
