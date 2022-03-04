@@ -36,6 +36,7 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 
 ```sh
 % ssh ide@localhost
+% curl -O https://mosh.org/mosh-1.3.2.tar.gz
 % tar xvzf mosh-1.3.2.tar.gz
 % cd mosh-1.3.2
 % ./configure
