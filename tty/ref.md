@@ -28,7 +28,9 @@ In `main` function, `STMClient` is the core to start the `mosh` client.
 
 ### STMClient::init
 
-`Overlay::OverlayManager overlays` is initialized in `STMClient` construction function. `Terminal::Display display` is initialized in `STMClient` construction function.
+`Overlay::OverlayManager overlays` is initialized in `STMClient` construction function.
+
+`Terminal::Display display` is initialized in `STMClient` construction function.
 
 - Check whether the client terminal support utf8 locale, via `is_utf8_locale()`, `locale_charset()`, `nl_langinfo()`.
 - Get the `termios` struct for `STDIN`, via `tcgetattr()`.
@@ -65,6 +67,11 @@ How the terminal works? Who is responsible for terminal rendering? Does GPU-rend
 
 - [Typing with pleasure](https://pavelfatin.com/typing-with-pleasure/)
 - [Measured: Typing latency of Zutty (compared to others)](https://tomscii.sig7.se/2021/01/Typing-latency-of-Zutty)
+
+## clangd format
+
+- [Clang-Format Style Options](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
+- [clangd format generator](https://zed0.co.uk/clang-format-configurator/)
 
 ### reference links
 
