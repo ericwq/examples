@@ -75,6 +75,7 @@ How the terminal works? Who is responsible for terminal rendering? Does GPU-rend
 
 ### reference links
 
+- [Using (neo)vim for C++ development](https://idie.ru/posts/vim-modern-cpp)
 - [Getting Started with Mosh (Mobile Shell)](https://bitlaunch.io/blog/getting-started-with-mosh/)
 - [example language server](https://github.com/ChrisAmelia/dotfiles/blob/master/nvim/lua/lsp.lua#L108-L120)
 - [nvim-lua/kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim)
