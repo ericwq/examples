@@ -26,11 +26,15 @@ In `main` function, `STMClient` is the core to start the `mosh` client.
   }
 ```
 
+### STMClient constructor
+
+- Set the `ip`,`port`,`key`,`predict_mode`,`verbose` parameter. Here, `network` is `NULL`.
+- `Overlay::OverlayManager overlays` is initialized in construction function.
+  - `overlays` contains `NotificationEngine`, `PredictionEngine`, `TitleEngine`. The design of these engine is unclear.
+- `Terminal::Display display` is initialized in construction function.
+  - `display` uses `Ncurses` libtool to setup the terminal.
+
 ### STMClient::init
-
-`Overlay::OverlayManager overlays` is initialized in `STMClient` construction function.
-
-`Terminal::Display display` is initialized in `STMClient` construction function.
 
 - Check whether the client terminal support utf8 locale, via `is_utf8_locale()`, `locale_charset()`, `nl_langinfo()`.
 - Get the `termios` struct for `STDIN`, via `tcgetattr()`.
@@ -47,7 +51,20 @@ In `main` function, `STMClient` is the core to start the `mosh` client.
 In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - Register signal handler for `SIGWINCH`, `SIGTERM`, `SIGINT`, `SIGHUP`, `SIGPIPE`, `SIGCONT`.
-- Get the window size for `stdin` , via `ioctl()` and `TIOCGWINSZ`.
+- Get the window size for `STDIN` , via `ioctl()` and `TIOCGWINSZ`.
+- Create `local_framebuffer` and set the `window_size`.?
+- Create `new_state` frame buffer and set the size to `1*1`.
+- initialize screen via `display.new_frame()`. Write screen to `STDOUT` via `swrite()`?
+- Create the `Network::UserStream`, create the `Terminal::Complete local_terminal` with window size.?
+- Open the network via `Network::Transport<Network::UserStream, Terminal::Complete>`.?
+- Set minial delay on outgoing keystrokes via `network->set_send_delay(1)`.?
+- Tell server the size of the terminal via `network->get_current_state().push_back()`.?
+- Set the `verbose` mode via `network->set_verbose()`.
+
+### Transport<MyState, RemoteState>::Transport
+
+- Initialize the `connection`, initialize the sender with `connection` and `initial_state`.
+  - `connection` is the underlying, encrypted network connection.
 
 ## reference
 
@@ -62,13 +79,20 @@ How the terminal works? Who is responsible for terminal rendering? Does GPU-rend
 - [A look at terminal emulators, part 2](https://lwn.net/Articles/751763/)
 - [High performant 2D renderer in a terminal](https://blog.ghaiklor.com/2020/07/27/high-performant-2d-renderer-in-a-terminal/)
 - [The TTY demystified](http://www.linusakesson.net/programming/tty/)
+- [Control sequence](https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html#ESC)
+- [The ASCII Character Set](https://www.w3schools.com/charsets/ref_html_ascii.asp#:~:text=The%20ASCII%20Character%20Set&text=ASCII%20is%20a%207%2Dbit,are%20all%20based%20on%20ASCII.)
+
+### C++ reference
+
+- [c++ reference](https://www.cplusplus.com/reference/)
+- [c++ grammar](https://www.runoob.com/cplusplus/cpp-modifier-types.html)
 
 ### typing
 
 - [Typing with pleasure](https://pavelfatin.com/typing-with-pleasure/)
 - [Measured: Typing latency of Zutty (compared to others)](https://tomscii.sig7.se/2021/01/Typing-latency-of-Zutty)
 
-## clangd format
+### clangd format
 
 - [Clang-Format Style Options](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
 - [clangd format generator](https://zed0.co.uk/clang-format-configurator/)
