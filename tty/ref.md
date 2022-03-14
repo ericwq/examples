@@ -70,6 +70,8 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 How the terminal works? Who is responsible for terminal rendering? Does GPU-rendering in terminal matter?
 
+- [Documentation for State Synchronization Protocol](https://github.com/mobile-shell/mosh/issues/1087)
+- [Text-Terminal-HOWTO](https://tldp.org/HOWTO/Text-Terminal-HOWTO.html)
 - [Linux terminals, tty, pty and shell](https://dev.to/napicella/linux-terminals-tty-pty-and-shell-192e)
 - [Linux terminals, tty, pty and shell - part 2](https://dev.to/napicella/linux-terminals-tty-pty-and-shell-part-2-2cb2)
 - [How does a Linux terminal work?](https://unix.stackexchange.com/questions/79334/how-does-a-linux-terminal-work)
