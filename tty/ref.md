@@ -20,8 +20,8 @@ The transport layer synchronizes the contents of the local state to the remote h
 
 - Transport sender behavior
   - The transport sender updates the receiver to the current state of the object by sending an Instruction: a self-contained message listing the source and target states and the binary “diff” between them.
-  - This “diff” is a logical one, calculated by the ob- ject implementation.
-  - The ultimate semantics of the pro- tocol depend on the type of object, and are not dictated by SSP.
+  - This “diff” is a logical one, calculated by the object implementation.
+  - The ultimate semantics of the protocol depend on the type of object, and are not dictated by SSP.
   - For user inputs, the diff contains every intervening keystroke.
   - For screen states, it is only the minimal message that transforms the client’s frame to the current one.
 - Transport sender timing
@@ -110,6 +110,15 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - Initialize the `connection`, initialize the sender with `connection` and `initial_state`.
   - `connection` is the underlying, encrypted network connection.
+
+### STMClient::main
+
+- `STMClient::main` calls `network->tick()` in the main loop.
+- `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
+- `sender.tick()` aka `TransportSender<MyState>::tick()` calculates diff and calls `send_to_receiver()` to send diffs or ack.
+- `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()` calls `send_in_fragments()` to send data.
+- `send_in_fragments()` belongs to `TransportSender<MyState>`, it creates `Instruction` and splits the `Instruction` into `Fragment` then calls `connection->send()` to send the `Fragment` to the receiver.
+- `connection->send()` aka `Connection::send()` send the real datagram to receiver.
 
 ## reference
 
