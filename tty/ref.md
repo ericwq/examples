@@ -113,12 +113,30 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 ### STMClient::main
 
+How the mosh client send the keystrokes to the server.
+
+- `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
+  - `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
+  - `process_user_input()` check the input character, for `LF`, `CR` etc. special character, they should be treated accordingly.
+  - For normal character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
+  - Here `network->get_current_state()` is actually `TransportSender.get_current_state()`. The return value is a `UserStream` object.
 - `STMClient::main` calls `network->tick()` in the main loop.
-- `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
-- `sender.tick()` aka `TransportSender<MyState>::tick()` calculates diff and calls `send_to_receiver()` to send diffs or ack.
-- `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()` calls `send_in_fragments()` to send data.
-- `send_in_fragments()` belongs to `TransportSender<MyState>`, it creates `Instruction` and splits the `Instruction` into `Fragment` then calls `connection->send()` to send the `Fragment` to the receiver.
-- `connection->send()` aka `Connection::send()` send the real datagram to receiver.
+  - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
+  - `sender.tick()` aka `TransportSender<MyState>::tick()` calls `current_state.diff_from()` to calculate diff.
+  - Here `current_state.diff_from()` is actually `UserStream::diff_from()`, who calculate diff based on user keystrokes.
+  - `sender.tick()` aka `TransportSender<MyState>::tick()` calls `send_to_receiver()` to send diffs or ack.
+  - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()` calls `send_in_fragments()` to send data.
+  - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()` creates `Instruction` and splits the `Instruction` into `Fragment` then calls `connection->send()` to send the `Fragment` to the receiver.
+  - In `send_in_fragments()`, `Fragmenter::make_fragments()` is called to serialize the `Instruction` into string, compresses it and splits it into `Fragment` based on the size of `MTU`, the default size of `MTU` is 1280.
+  - `connection->send()` aka `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
+
+How the mosh client receive the screen from the server.
+
+- `STMClient::main` calls `process_network_input()` if network is ready to read.
+  - `process_network_input()` aka `STMClient::process_network_input()` calls `network->recv()` to receive the data from server.
+  - `network->recv()` aka `Transport<MyState, RemoteState>::recv()` calls `connection.recv()` to receive the data.
+  - `connection.recv()` aka `Connection::recv()` calls `recv_one()` to read.
+  - `recv_one()` aka `Connection::recv_one()` calls `recvmsg()` system call to receive data from socket.
 
 ## reference
 
