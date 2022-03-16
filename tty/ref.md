@@ -96,13 +96,14 @@ In `main` function, `STMClient` is the core to start the `mosh` client.
 In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - Register signal handler for `SIGWINCH`, `SIGTERM`, `SIGINT`, `SIGHUP`, `SIGPIPE`, `SIGCONT`.
+  - `sel.add_signal()` disposition the above signals. It blocks the signal outside of `pselect()`. In `pselect()`, the signal mask is replaced by a empty mask set.
 - Get the window size for `STDIN` , via `ioctl()` and `TIOCGWINSZ`.
 - Create `local_framebuffer` and set the `window_size`.?
 - Create `new_state` frame buffer and set the size to `1*1`.
 - initialize screen via `display.new_frame()`. Write screen to `STDOUT` via `swrite()`?
 - Create the `Network::UserStream`, create the `Terminal::Complete local_terminal` with window size.?
 - Open the network via `Network::Transport<Network::UserStream, Terminal::Complete>`.?
-- Set minial delay on outgoing keystrokes via `network->set_send_delay(1)`.?
+- Set minimal delay on outgoing keystrokes via `network->set_send_delay(1)`.?
 - Tell server the size of the terminal via `network->get_current_state().push_back()`.?
 - Set the `verbose` mode via `network->set_verbose()`.
 
@@ -112,6 +113,20 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - `connection` is the underlying, encrypted network connection.
 
 ### STMClient::main
+
+In the main loop(while loop), It performs the following steps:
+
+- Output terminal content to the `STDOUT_FILENO` via `output_new_frame()`.
+- Get the network sockets from `network->fds()`.
+- Add network sockets and `STDIN_FILENO` to the singleton `Select` object.
+- Wait for socket input or user keystroke or signal via `sel.select()`, which specify `waittime`.
+- Upon receive signals, the corresponding item in `Select.got_signal` array is set.
+- Upon network sockets is ready to read, process it with `process_network_input()`.
+- Upon user keystroke is ready to read, process it with `process_user_input`.
+- Upon receive `SIGWINCH` signal, resize the terminal with `process_resize()`.
+- Upon receive `SIGCONT` signal, process it with `resume()`.
+- Upon receive `SIGTERM, SIGINT, SIGHUP, SIGPIPE` signals, showdown the process via `network->start_shutdown()`.
+- Perform `network->tick()` to synchronizes the data to the server.
 
 How the mosh client send the keystrokes to the server.
 
