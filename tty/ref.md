@@ -107,8 +107,11 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - In `Connection::Connection()`, the `Addr remote_addr` is created and saved in `Connection.remote_addr`.
   - In `Connection::Connection()`, the `Connection::Socket` is created and saved in `Connection.socks`.
   - In `Connection::Connection()`, `Connection::set_MTU()` is called to set the MTU.
-- Set minimal delay on outgoing keystrokes via `network->set_send_delay(1)`.?
-- Tell server the size of the terminal via `network->get_current_state().push_back()`.?
+- Set minimal delay on outgoing keystrokes to 1 ms, via `network->set_send_delay()`.
+- Tell server the size of the terminal via `network->get_current_state().push_back()`.
+  - Here `network->get_current_state()` is actually `TransportSender.get_current_state()`.
+  - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
+  - The `Parser::Resize` object is set with the current terminal window size.
 - Set the `verbose` mode via `network->set_verbose()`.
 
 ### Transport<MyState, RemoteState>::Transport
@@ -137,17 +140,38 @@ How the mosh client send the keystrokes to the server.
 - `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
   - `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
   - `process_user_input()` check the input character, for `LF`, `CR` etc. special character, they should be treated accordingly.
-  - For normal character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
-  - Here `network->get_current_state()` is actually `TransportSender.get_current_state()`. The return value is a `UserStream` object.
+  - For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
+  - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
+  - Here `network->get_current_state()` is actually `TransportSender.get_current_state()`.
+  - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
 - `STMClient::main` calls `network->tick()` in the main loop.
   - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
-  - `sender.tick()` aka `TransportSender<MyState>::tick()` calls `current_state.diff_from()` to calculate diff.
+  - `sender.tick()` aka `TransportSender<MyState>::tick()`
+  - `sender.tick()` calls `calculate_timers()` to calculate next send and ack times.
+  - `sender.tick()` calls `current_state.diff_from()` to calculate diff.
   - Here `current_state.diff_from()` is actually `UserStream::diff_from()`, who calculate diff based on user keystrokes.
-  - `sender.tick()` aka `TransportSender<MyState>::tick()` calls `send_to_receiver()` to send diffs or ack.
-  - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()` calls `send_in_fragments()` to send data.
-  - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()` creates `Instruction` and splits the `Instruction` into `Fragment` then calls `connection->send()` to send the `Fragment` to the receiver.
-  - In `send_in_fragments()`, `Fragmenter::make_fragments()` is called to serialize the `Instruction` into string, compresses it and splits it into `Fragment` based on the size of `MTU`, the default size of `MTU` is 1280.
-  - `connection->send()` aka `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
+    - `UserStream::diff_from()` compares two `UserStream` object.
+    - `UserStream::diff_from()` finds the different position and build `ClientBuffers::UserMessage`, which is a proto2 message.
+    - `UserStream::diff_from()` returns the serialized string for the `ClientBuffers::UserMessage` object.
+  - If `diff` is empty and if it's the ack time,
+    - `sender.tick()` calls `send_empty_ack()` to send ack.
+    - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
+    - `send_empty_ack()` calls `send_in_fragments()` to send data.
+  - If `diff` is not empty and if it's the send or ack time,
+    - `sender.tick()` calls `send_to_receiver()` to send diffs.
+    - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
+  - `send_to_receiver()` calls `send_in_fragments()` to send data.
+
+Send data process.
+
+- `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
+- `send_in_fragments()` creates `Instruction` with the `diff` created in previous step.
+- `send_in_fragments()` splits the `Instruction` into `Fragment`.
+  - Here `Fragmenter::make_fragments()` is called to serialize the `Instruction` into string,
+  - compress it and splits it into `Fragment` based on the size of `MTU`,
+  - The default size of `MTU` is 1280.
+- `send_in_fragments()` calls `connection->send()` to send the `Fragment` to the receiver.
+- `connection->send()` aka `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
 
 How the mosh client receive the screen from the server.
 
