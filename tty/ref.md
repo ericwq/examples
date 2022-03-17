@@ -9,7 +9,7 @@
 The datagram layer maintains the “roaming” connection. It accepts opaque payloads from the transport layer, prepends an incrementing sequence number, encrypts the packet, and sends the resulting ciphertext in a UDP datagram. It is responsible for estimating the timing characteristics of the link and keeping track of the client’s current public IP address.
 
 - Client roaming.
-  - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP ad- dress and UDP port number as its new “target.”
+  - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.”
 - Estimating round-trip time and RTT variation.
   - Every outgoing datagram contains a millisecond timestamp and an optional “timestamp reply,” containing the most recently received timestamp from the remote host.
   - SSP adjusts the “timestamp reply” by the amount of time since it received the corresponding timestamp.
@@ -85,7 +85,7 @@ In `main` function, `STMClient` is the core to start the `mosh` client.
 - Get the `termios` struct for `STDIN`, via `tcgetattr()`.
 - Set `IUTF8` flag for `termios`.
 - Set the terminal for `STDIN` to raw mode, via `cfmakeraw()`.
-- Pet the terminal for `STDOUT` in application cursor key mode. `Display::open()`.
+- Set the terminal for `STDOUT` in application cursor key mode. `Display::open()`.
   - In Application mode, the cursor keys generate escape sequences that the application uses for its own purpose.
   - Application Cursor Keys mode is a way for the server to change the control sequences sent by the arrow keys. In normal mode, the arrow keys send `ESC [A` through to `ESC [D`. In application mode, they send `ESC OA` through to `ESC OD`.
 - Set terminal window title, via `overlays.set_title_prefix()`. ?
@@ -103,6 +103,10 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - initialize screen via `display.new_frame()`. Write screen to `STDOUT` via `swrite()`?
 - Create the `Network::UserStream`, create the `Terminal::Complete local_terminal` with window size.?
 - Open the network via `Network::Transport<Network::UserStream, Terminal::Complete>`.?
+  - In the constructor function (client side), `connection(key_str, ip, port)` is called to create the socket with the server.
+  - In `Connection::Connection()`, the `Addr remote_addr` is created and saved in `Connection.remote_addr`.
+  - In `Connection::Connection()`, the `Connection::Socket` is created and saved in `Connection.socks`.
+  - In `Connection::Connection()`, `Connection::set_MTU()` is called to set the MTU.
 - Set minimal delay on outgoing keystrokes via `network->set_send_delay(1)`.?
 - Tell server the size of the terminal via `network->get_current_state().push_back()`.?
 - Set the `verbose` mode via `network->set_verbose()`.
