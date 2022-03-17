@@ -160,7 +160,7 @@ How the mosh client send the keystrokes to the server.
   - If `diff` is not empty and if it's the send or ack time,
     - `sender.tick()` calls `send_to_receiver()` to send diffs.
     - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
-  - `send_to_receiver()` calls `send_in_fragments()` to send data.
+    - `send_to_receiver()` calls `send_in_fragments()` to send data.
 
 Send data process.
 
@@ -176,10 +176,12 @@ Send data process.
 How the mosh client receive the screen from the server.
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
-  - `process_network_input()` aka `STMClient::process_network_input()` calls `network->recv()` to receive the data from server.
-  - `network->recv()` aka `Transport<MyState, RemoteState>::recv()` calls `connection.recv()` to receive the data.
-  - `connection.recv()` aka `Connection::recv()` calls `recv_one()` to read.
-  - `recv_one()` aka `Connection::recv_one()` calls `recvmsg()` system call to receive data from socket.
+- `process_network_input()` aka `STMClient::process_network_input()`
+- `process_network_input()` calls `network->recv()` to receive the data from server.
+- `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
+- `network->recv()` calls `connection.recv()` to receive the data.
+- `connection.recv()` aka `Connection::recv()` calls `recv_one()` to read.
+- `recv_one()` aka `Connection::recv_one()` calls `recvmsg()` system call to receive data from socket.
 
 ## reference
 
