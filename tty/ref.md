@@ -151,6 +151,10 @@ How the mosh client send the keystrokes to the server.
   - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
   - `sender.tick()` aka `TransportSender<MyState>::tick()`
   - `sender.tick()` calls `calculate_timers()` to calculate next send and ack times.
+    - `calculate_timers()` aka `TransportSender<MyState>::calculate_timers()`.
+    - `calculate_timers()` calls `update_assumed_receiver_state()` to update assumed receiver state.
+    - `calculate_timers()` calls `rationalize_states()` cut out common prefix of all states.
+    - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
   - `sender.tick()` calls `current_state.diff_from()` to calculate diff.
   - Here `current_state.diff_from()` is actually `UserStream::diff_from()`, who calculate diff based on user keystrokes.
     - `UserStream::diff_from()` compares two `UserStream` object.
@@ -169,16 +173,16 @@ How the mosh client send the keystrokes to the server.
     - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
     - `send_to_receiver()` calls `send_in_fragments()` to send data.
 
-Send data process.
+Send data to server.
 
 - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
 - `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in `UserStream::diff_from()` step.
 - `send_in_fragments()` calls `Fragmenter::make_fragments` to splits the `TransportBuffers.Instruction` into `Fragment`.
-  - `make_fragments()` compresses the `TransportBuffers.Instruction` and serializes it into `payload` string,
+  - `make_fragments()` serializes `TransportBuffers.Instruction` into string and compresses it to string `payload`.
   - The `payload` string is splited into fragments based on the size of `MTU`,
   - The default size of `MTU` is 1280.
   - The fragments is saved in `Fragment` vector.
-- `send_in_fragments()` calls `connection->send()` to send the `Fragment` vector to the receiver.
+- `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server.
 - `connection->send()` aka `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
 
 How the mosh client receive the screen from the server.
