@@ -129,14 +129,14 @@ In the main loop(while loop), It performs the following steps:
 - Add network sockets and `STDIN_FILENO` to the singleton `Select` object.
 - Wait for socket input or user keystroke or signal via `sel.select()`, within the `waittime` timeout.
 - Upon receive signals, the corresponding item in `Select.got_signal` array is set.
-- Upon network sockets is ready to read, process it with `process_network_input()`.
-- Upon user keystroke is ready to read, process it with `process_user_input`.
+- Upon network sockets is ready to read, process it with [`process_network_input()`](#how-the-mosh-client-receive-the-screen-from-the-server)`.
+- Upon user keystroke is ready to read, process it with [`process_user_input`](#how-the-mosh-client-send-the-keystrokes-to-the-server).
 - Upon receive `SIGWINCH` signal, resize the terminal with `process_resize()`.
 - Upon receive `SIGCONT` signal, process it with `resume()`.
 - Upon receive `SIGTERM, SIGINT, SIGHUP, SIGPIPE` signals, showdown the process via `network->start_shutdown()`.
 - Perform `network->tick()` to synchronizes the data to the server.
 
-How the mosh client send the keystrokes to the server.
+#### How the mosh client send the keystrokes to the server.
 
 - `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
   - `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
@@ -152,8 +152,8 @@ How the mosh client send the keystrokes to the server.
   - `sender.tick()` aka `TransportSender<MyState>::tick()`
   - `sender.tick()` calls `calculate_timers()` to calculate next send and ack times.
     - `calculate_timers()` aka `TransportSender<MyState>::calculate_timers()`.
-    - `calculate_timers()` calls `update_assumed_receiver_state()` to update assumed receiver state.
-    - `calculate_timers()` calls `rationalize_states()` cut out common prefix of all states.
+    - `calculate_timers()` calls [`update_assumed_receiver_state()`](#how-to-pick-the-reciver-state) to update assumed receiver state.
+    - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
     - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
   - `sender.tick()` calls `current_state.diff_from()` to calculate diff.
   - Here `current_state.diff_from()` is actually `UserStream::diff_from()`, who calculate diff based on user keystrokes.
@@ -167,13 +167,37 @@ How the mosh client send the keystrokes to the server.
   - If `diff` is empty and if it's the ack time,
     - `sender.tick()` calls `send_empty_ack()` to send ack.
     - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
-    - `send_empty_ack()` calls `send_in_fragments()` to send data.
+    - `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
   - If `diff` is not empty and if it's the send or ack time,
     - `sender.tick()` calls `send_to_receiver()` to send diffs.
     - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
-    - `send_to_receiver()` calls `send_in_fragments()` to send data.
+    - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
 
-Send data to server.
+#### How to pick the reciver state
+
+- `update_assumed_receiver_state()` picks the first item in `send_state`.
+- `send_state` is of type `list<TimestampedState<MyState>>`.
+- `send_state` skips the first item.
+- For each item in `send_state`, if the time gap is lower than `connection->timeout()`. Update `assumed_receiver_state`.
+  - `connection->timeout()` aka `Connection::timeout()`.
+  - `connection->timeout()` calcuates `RTO` based on `SRTT` and `RTTVAR`.
+- The result is saved in `assumed_receiver_state`.
+
+#### How to rationalize states
+
+- `rationalize_states()` aka `TransportSender<MyState>::rationalize_states()`.
+- `rationalize_states()` picks the first state from `sent_states` as common prefix.
+  - `sent_states` is of type `list<TimestampedState<MyStat>>`.
+- The comm prefix is the first state in `send_state`.
+- `rationalize_states()` calls `current_state.subtract()` to cut out common prefix from `current_state`.
+- `rationalize_states()` calls `i->state.subtract()` to cut out common prefix for all states in `sent_states`.
+  - For client side:
+  - `subtract()` aka `UserStream::subtract()`.
+  - `subtract()` cuts out any `UserEvent` from 's `actions` deque, if it's the same `UserEvent` in `prefix`.
+  - The result is the caller of `subtract()` cut out common prefix.
+- The result is that the common prefix in `current_state` and `sent_states` is cut out.
+
+#### How to send data to server.
 
 - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
 - `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in `UserStream::diff_from()` step.
@@ -185,7 +209,7 @@ Send data to server.
 - `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server.
 - `connection->send()` aka `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
 
-How the mosh client receive the screen from the server.
+#### How the mosh client receive the screen from the server.
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
 - `process_network_input()` aka `STMClient::process_network_input()`
