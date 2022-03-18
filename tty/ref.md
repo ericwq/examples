@@ -111,6 +111,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - Tell server the size of the terminal via `network->get_current_state().push_back()`.
   - Here `network->get_current_state()` is actually `TransportSender.get_current_state()`.
   - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
+  - `network->get_current_state().push_back()` adds `Parser::Resize` to `UserStream`.
   - The `Parser::Resize` object is set with the current terminal window size.
 - Set the `verbose` mode via `network->set_verbose()`.
 
@@ -126,7 +127,7 @@ In the main loop(while loop), It performs the following steps:
 - Output terminal content to the `STDOUT_FILENO` via `output_new_frame()`.
 - Get the network sockets from `network->fds()`.
 - Add network sockets and `STDIN_FILENO` to the singleton `Select` object.
-- Wait for socket input or user keystroke or signal via `sel.select()`, which specify `waittime`.
+- Wait for socket input or user keystroke or signal via `sel.select()`, within the `waittime` timeout.
 - Upon receive signals, the corresponding item in `Select.got_signal` array is set.
 - Upon network sockets is ready to read, process it with `process_network_input()`.
 - Upon user keystroke is ready to read, process it with `process_user_input`.
@@ -141,9 +142,11 @@ How the mosh client send the keystrokes to the server.
   - `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
   - `process_user_input()` check the input character, for `LF`, `CR` etc. special character, they should be treated accordingly.
   - For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
-  - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
-  - Here `network->get_current_state()` is actually `TransportSender.get_current_state()`.
-  - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
+    - `network->get_current_state()` is actually `TransportSender.get_current_state()`.
+    - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
+    - Here the keystroke is wrapped in `Parser::UserByte`.
+    - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
+    - `network->get_current_state().push_back()` adds `Parser::UserByte` to `UserStream`.
 - `STMClient::main` calls `network->tick()` in the main loop.
   - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
   - `sender.tick()` aka `TransportSender<MyState>::tick()`
