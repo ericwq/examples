@@ -10,7 +10,7 @@ The datagram layer maintains the “roaming” connection. It accepts opaque pay
 
 - Client roaming.
   - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.”
-- Estimating round-trip time and RTT variation. See [the implementation](#how-the-mosh-client-receive-the-screen-from-the-server).
+- Estimating round-trip time and RTT variation. See [the implementation](#how-to-receive-the-screen-from-the-server).
   - Every outgoing datagram contains a millisecond timestamp and an optional “timestamp reply,” containing the most recently received timestamp from the remote host.
   - SSP adjusts the “timestamp reply” by the amount of time since it received the corresponding timestamp.
 
@@ -45,11 +45,11 @@ The transport layer synchronizes the contents of the local state to the remote h
   - If it has the source state, and if the target state is newer than the receiver's current state, it succeeds and then acknowledges the new target state.
   - Otherwise it fails to apply the diff and just acks its current state number.
 
-## mosh coding analysis
+## Mosh coding analysis
 
 ### mosh-client.cc
 
-In `main` function, `STMClient` is the core to start the `mosh` client.
+In the `main` function, `STMClient` is the core to start `mosh` client.
 
 ```cpp
   try {
@@ -129,14 +129,14 @@ In the main loop(while loop), It performs the following steps:
 - Add network sockets and `STDIN_FILENO` to the singleton `Select` object.
 - Wait for socket input or user keystroke or signal via `sel.select()`, within the `waittime` timeout.
 - Upon receive signals, the corresponding item in `Select.got_signal` array is set.
-- Upon network sockets is ready to read, process it with [`process_network_input()`](#how-the-mosh-client-receive-the-screen-from-the-server)`.
-- Upon user keystroke is ready to read, process it with [`process_user_input`](#how-the-mosh-client-send-the-keystrokes-to-the-server).
+- Upon network sockets is ready to read, process it with [`process_network_input()`](#how-to-receive-the-screen-from-the-server)`.
+- Upon user keystroke is ready to read, process it with [`process_user_input`](#how-to-process-the-user-input)
 - Upon receive `SIGWINCH` signal, resize the terminal with `process_resize()`.
 - Upon receive `SIGCONT` signal, process it with `resume()`.
 - Upon receive `SIGTERM, SIGINT, SIGHUP, SIGPIPE` signals, showdown the process via `network->start_shutdown()`.
 - Perform `network->tick()` to synchronizes the data to the server.
 
-#### How the mosh client send the keystrokes to the server.
+#### How to process the user input
 
 - `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
   - `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
@@ -156,29 +156,33 @@ In the main loop(while loop), It performs the following steps:
     - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
     - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
   - `sender.tick()` calls `current_state.diff_from()` to calculate diff.
-  - Here `current_state.diff_from()` is actually `UserStream::diff_from()`, who calculate diff based on user keystrokes.
-    - `UserStream::diff_from()` compares `current_state` with `assumed_receiver_state` to calculate the diff.
+
+#### How to calculate the diff (client side)
+
+- `current_state.diff_from()` aka `UserStream::diff_from()`, who calculate diff based on user keystrokes.
+  - `diff_from()` compares `current_state` with `assumed_receiver_state` to calculate the diff.
   - For client side:
-    - `UserStream::diff_from()` compares two `UserStream` object.
-    - `UserStream::diff_from()` finds the different position and build `ClientBuffers::UserMessage`, which is a proto2 message.
-    - `UserStream::diff_from()` returns the serialized string for the `ClientBuffers::UserMessage` object.
+    - `diff_from()` compares two `UserStream` object.
+    - `diff_from()` finds the different position and build `ClientBuffers::UserMessage`, which is a proto2 message.
+    - `diff_from()` returns the serialized string for the `ClientBuffers::UserMessage` object.
     - `UserMessage` contains several `ClientBuffers.Instruction`.
     - `ClientBuffers.Instruction` is composed of `Keystroke` or `ResizeMessage` (see userinput.proto file)
     - Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
     - `ResizeMessage` is added to one `ClientBuffers.Instruction`.
-  - If `diff` is empty and if it's the ack time,
-    - `sender.tick()` calls `send_empty_ack()` to send ack.
-    - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
-    - `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
-  - If `diff` is not empty and if it's the send or ack time,
-    - `sender.tick()` calls `send_to_receiver()` to send diffs.
-    - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
-    - `send_to_receiver()` calls `add_sent_state()` to send a new state.
-    - `add_sent_state()` adds the new state to `sent_states` and limits the size of `send_states` list.
-    - Or `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
-    - Note `sent_states` is list of type `TimestampedState`, while `current_state` is of type `MyState`.
-    - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
-    - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
+- `diff_from()` calls `attempt_prospective_resend_optimization()` to investigate diff against known receiver state.
+- If `diff` is empty and if it's greater than the `next_ack_time`.
+  - `sender.tick()` calls `send_empty_ack()` to send ack.
+  - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
+  - `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
+- If `diff` is not empty and if it's greater than `next_send_time` or `next_ack_time`.
+  - `sender.tick()` calls `send_to_receiver()` to send diffs.
+  - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
+  - `send_to_receiver()` calls `add_sent_state()` to send a new state.
+  - `add_sent_state()` adds the new state to `sent_states` and limits the size of `send_states` list.
+  - Or `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
+  - Note `sent_states` is list of type `TimestampedState`, while `current_state` is of type `MyState`.
+  - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
+  - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
 #### How to pick the reciver state
 
@@ -221,7 +225,7 @@ In the main loop(while loop), It performs the following steps:
 - `Connection::send()` calls `session.encrypt()` to encrypt the `Packet`.
 - `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
 
-#### How the mosh client receive the screen from the server.
+#### How to receive the screen from the server.
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
 - `process_network_input()` aka `STMClient::process_network_input()`
