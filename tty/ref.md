@@ -6,7 +6,7 @@
 
 ### Datagram Layer
 
-The datagram layer maintains the “roaming” connection. It accepts opaque payloads from the transport layer, prepends an incrementing sequence number, encrypts the packet, and sends the resulting ciphertext in a UDP datagram. It is responsible for estimating the timing characteristics of the link and keeping track of the client’s current public IP address.
+The datagram layer maintains the “roaming” connection. It accepts opaque payloads from the transport layer, prepends an incrementing sequence number, encrypts the packet, and sends the resulting ciphertext in a UDP datagram. It is responsible for estimating the timing characteristics of the link and keeping track of the client’s current public IP address. See [the implementation](#how-to-send-data-to-server)
 
 - Client roaming.
   - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.”
@@ -213,7 +213,7 @@ In the main loop(while loop), It performs the following steps:
 #### How to send data to server.
 
 - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
-- `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in `UserStream::diff_from()` step.
+- `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in [previous](#how-to-calculate-the-diff-client-side) step.
 - `send_in_fragments()` calls `Fragmenter::make_fragments` to splits the `TransportBuffers.Instruction` into `Fragment`.
   - `make_fragments()` serializes `TransportBuffers.Instruction` into string and compresses it to string `payload`.
   - The `payload` string is splited into fragments based on the size of `MTU`,
@@ -222,6 +222,8 @@ In the main loop(while loop), It performs the following steps:
 - `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server.
 - `connection->send()` aka `Connection::send()`.
 - `Connection::send()` calls `new_packet()` to create a `Packet`.
+  - Besides the `payload` field,
+  - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
 - `Connection::send()` calls `session.encrypt()` to encrypt the `Packet`.
 - `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
 
