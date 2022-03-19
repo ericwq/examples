@@ -157,6 +157,8 @@ In the main loop(while loop), It performs the following steps:
     - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
   - `sender.tick()` calls `current_state.diff_from()` to calculate diff.
   - Here `current_state.diff_from()` is actually `UserStream::diff_from()`, who calculate diff based on user keystrokes.
+    - `UserStream::diff_from()` compares `current_state` with `assumed_receiver_state` to calculate the diff.
+  - For client side:
     - `UserStream::diff_from()` compares two `UserStream` object.
     - `UserStream::diff_from()` finds the different position and build `ClientBuffers::UserMessage`, which is a proto2 message.
     - `UserStream::diff_from()` returns the serialized string for the `ClientBuffers::UserMessage` object.
@@ -175,6 +177,7 @@ In the main loop(while loop), It performs the following steps:
 
 #### How to pick the reciver state
 
+- `update_assumed_receiver_state()` choose a most recent receiver state based on network traffic.
 - `update_assumed_receiver_state()` picks the first item in `send_state`.
 - `send_state` is of type `list<TimestampedState<MyState>>`.
 - `send_state` skips the first item.
@@ -182,6 +185,7 @@ In the main loop(while loop), It performs the following steps:
   - `connection->timeout()` aka `Connection::timeout()`.
   - `connection->timeout()` calcuates `RTO` based on `SRTT` and `RTTVAR`.
 - The result is saved in `assumed_receiver_state`.
+- `assumed_receiver_state` point to the middle of `sent_states`.
 
 #### How to rationalize states
 
