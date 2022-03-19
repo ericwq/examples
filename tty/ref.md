@@ -34,7 +34,7 @@ The transport layer synchronizes the contents of the local state to the remote h
 ## SSP design in [github.com](https://github.com/mobile-shell/mosh/issues/1087#issuecomment-641801909)
 
 - The sender always sends diffs. There is no "full update" instruction.
-- The diff has three important fields: the source, target, and throwaway number.
+- The diff has three important fields: the source, target, and throwaway number. See [the implementation](#how-to-send-data-to-server).
   - The target of the diff is always the current sender-side state.
   - The throwaway number of the diff is always the most recent state that has been explicitly acknowledged by the receiver.
   - The source of the diff is allowed to be:
@@ -214,9 +214,15 @@ In the main loop(while loop), It performs the following steps:
 
 - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
 - `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in [previous](#how-to-calculate-the-diff-client-side) step.
+- `TransportBuffers.Instruction` contains the following fields.
+  - `old_num` field is the source number. It's value is `assumed_receiver_state->num`.
+  - `new_num` field is the target number. It's value is specified by `new_num` parameter.
+  - `throwaway_num` field is the throwaway number. It's value is `sent_states.front().num`.
+  - `diff` field contains the `diff`. It's value is specified by `diff` parameter.
+  - `ack_num` field is the ack number. It's value is assigned by `ack_num`.
 - `send_in_fragments()` calls `Fragmenter::make_fragments` to splits the `TransportBuffers.Instruction` into `Fragment`.
   - `make_fragments()` serializes `TransportBuffers.Instruction` into string and compresses it to string `payload`.
-  - The `payload` string is splited into fragments based on the size of `MTU`,
+  - The `payload` string is split into fragments based on the size of `MTU`,
   - The default size of `MTU` is 1280.
   - The fragments is saved in `Fragment` vector.
 - `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server.
