@@ -173,7 +173,12 @@ In the main loop(while loop), It performs the following steps:
   - If `diff` is not empty and if it's the send or ack time,
     - `sender.tick()` calls `send_to_receiver()` to send diffs.
     - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
+    - `send_to_receiver()` calls `add_sent_state()` to send a new state.
+    - `add_sent_state()` adds the new state to `sent_states` and limits the size of `send_states` list.
+    - Or `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
+    - Note `sent_states` is list of type `TimestampedState`, while `current_state` is of type `MyState`.
     - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
+    - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
 #### How to pick the reciver state
 
