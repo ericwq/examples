@@ -10,7 +10,7 @@ The datagram layer maintains the “roaming” connection. It accepts opaque pay
 
 - Client roaming.
   - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.”
-- Estimating round-trip time and RTT variation.
+- Estimating round-trip time and RTT variation. See [the implementation](#how-the-mosh-client-receive-the-screen-from-the-server).
   - Every outgoing datagram contains a millisecond timestamp and an optional “timestamp reply,” containing the most recently received timestamp from the remote host.
   - SSP adjusts the “timestamp reply” by the amount of time since it received the corresponding timestamp.
 
@@ -183,7 +183,7 @@ In the main loop(while loop), It performs the following steps:
 - `send_state` skips the first item.
 - For each item in `send_state`, if the time gap is lower than `connection->timeout()`. Update `assumed_receiver_state`.
   - `connection->timeout()` aka `Connection::timeout()`.
-  - `connection->timeout()` calcuates `RTO` based on `SRTT` and `RTTVAR`.
+  - `connection->timeout()` calcuates [RTO](https://datatracker.ietf.org/doc/html/rfc2988) based on `SRTT` and `RTTVAR`.
 - The result is saved in `assumed_receiver_state`.
 - `assumed_receiver_state` point to the middle of `sent_states`.
 
@@ -224,7 +224,10 @@ In the main loop(while loop), It performs the following steps:
 - `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
 - `network->recv()` calls `connection.recv()` to receive the data.
 - `connection.recv()` aka `Connection::recv()` calls `recv_one()` to read.
-- `recv_one()` aka `Connection::recv_one()` calls `recvmsg()` system call to receive data from socket.
+- `recv_one()` aka `Connection::recv_one()`
+- `recv_one()` calls `recvmsg()` system call to receive data from socket.
+- `recv_one()` calls `session.decrypt()` to decrypt the received message and create a `Packet` object.
+- `recv_one()` calcuates `SRTT` and `RTTVAR` based on each [RTT](https://datatracker.ietf.org/doc/html/rfc29880).
 
 ## reference
 
