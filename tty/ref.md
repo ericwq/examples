@@ -177,7 +177,7 @@ In the main loop(while loop), It performs the following steps:
 
 #### How to pick the reciver state
 
-- `update_assumed_receiver_state()` choose a most recent receiver state based on network traffic.
+- `update_assumed_receiver_state()` chooses a most recent receiver state based on network traffic.
 - `update_assumed_receiver_state()` picks the first item in `send_state`.
 - `send_state` is of type `list<TimestampedState<MyState>>`.
 - `send_state` skips the first item.
@@ -211,7 +211,10 @@ In the main loop(while loop), It performs the following steps:
   - The default size of `MTU` is 1280.
   - The fragments is saved in `Fragment` vector.
 - `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server.
-- `connection->send()` aka `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
+- `connection->send()` aka `Connection::send()`.
+- `Connection::send()` calls `new_packet()` to create a `Packet`.
+- `Connection::send()` calls `session.encrypt()` to encrypt the `Packet`.
+- `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
 
 #### How the mosh client receive the screen from the server.
 
