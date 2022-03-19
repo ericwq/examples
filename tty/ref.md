@@ -235,12 +235,39 @@ In the main loop(while loop), It performs the following steps:
 
 #### How to receive the screen from the server.
 
+<!--
+TODO why there is a socket list in `Connection.socks`? see `socks.push_back()` and `hop_port()`.
+TODO what the purpose of `overlay`.
+-->
+
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
 - `process_network_input()` aka `STMClient::process_network_input()`
 - `process_network_input()` calls `network->recv()` to receive the data from server.
 - `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
 - `network->recv()` calls `connection.recv()` to receive the data.
-- `connection.recv()` aka `Connection::recv()` calls `recv_one()` to read.
+  - `connection.recv()` aka `Connection::recv()`
+  - `connection.recv()` calls [`recv_one()`](#how-to-receive-datagram-from-server) on the first `Socket` in `socks`.
+  - If [`recv_one()`](#how-to-receive-datagram-from-server) returns `EAGAIN` or `EWOULDBLOCK`, try the next `Socket` in `socks` until the last one.
+  - `connection.recv()` calls `prune_sockets()` to prune the old sockets.
+    - `prune_sockets()` aka `Connection::prune_sockets()`
+    - `prune_sockets()` removes old sockets if the new socket has been working for long enough.
+    - `prune_sockets()` make sure we don't have too many receive sockets open.
+  - `connection.recv()` return the `payload` got from `recv_one()`.
+- `network->recv()` calls `fragments.add_fragment()` get the complete packet.
+- `network->recv()` calls `fragments.get_assembly()` to build the `Instruction`.
+- `network->recv()` makes sure we don't already have the new state?
+- `network->recv()` makes sure we do have the old state.
+- `network->recv()` throws away the unnecessary state via `process_throwaway_until()`.
+- `network->recv()` limit on state queue.
+- `network->recv()` apply diff to reference state.
+- `network->recv()` Insert new state in sorted place.
+- `network->recv()` calls `received_states.push_back()` to store the received state.
+- `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
+- `network->recv()` calls `sender.remote_heard()` to set last time received new state.
+- `network->recv()` calls `sender.set_data_ack()` to accelerate reply ack.
+
+#### How to receive datagram from server
+
 - `recv_one()` aka `Connection::recv_one()`
 - `recv_one()` calls `recvmsg()` system call to receive data from socket.
 - `recv_one()` calls `session.decrypt()` to decrypt the received message and create a `Packet` object.
