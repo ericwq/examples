@@ -155,7 +155,7 @@ In the main loop(while loop), It performs the following steps:
     - `calculate_timers()` calls [`update_assumed_receiver_state()`](#how-to-pick-the-reciver-state) to update assumed receiver state.
     - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
     - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
-  - `sender.tick()` calls `current_state.diff_from()` to calculate diff.
+  - `sender.tick()` calls `current_state.diff_from()` to calculate diff. See [next](#how-to-calculate-the-diff-client-side) step.
 
 #### How to calculate the diff (client side)
 
@@ -225,20 +225,23 @@ In the main loop(while loop), It performs the following steps:
   - The `payload` string is split into fragments based on the size of `MTU`,
   - The default size of `MTU` is 1280.
   - The fragments is saved in `Fragment` vector.
-- `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server.
-  - `connection->send()` aka `Connection::send()`.
-  - `connection->send()` calls `new_packet()` to create a `Packet`.?
-    - `Packet` is of type `Network::Packet`.
-    - Besides the `payload` field,
-    - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
-  - `connection->send()` calls `session.encrypt()` to encrypt the `Packet`.
-  - `connection->send()` calls `sendto()` system call to send the encrypted data to receiver.
-  - `connection->send()` checks the time gap between now and `last_port_choice`, `last_roundtrip_success`.
-  - `connection->send()` calls `hop_port()`, if the time gap is greater than `PORT_HOP_INTERVAL`.
-    - `hop_port()` aka `Connection::hop_port()`. `hop_port()` only works for client.
-    - `hop_port()` calls `setup()` to update `last_port_choice`.
-    - `hop_port()` creates a new `Socket` object and calls `socks.push_back()` to save it in `socks` list.
-    - `hop_port()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
+- `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server. See [next](#how-to-send-a-packet) step.
+
+### How to send a packet?
+
+- `connection->send()` aka `Connection::send()`.
+- `connection->send()` calls `new_packet()` to create a `Packet`.?
+  - `Packet` is of type `Network::Packet`.
+  - Besides the `payload` field,
+  - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
+- `connection->send()` calls `session.encrypt()` to encrypt the `Packet`.
+- `connection->send()` calls `sendto()` system call to send the encrypted data to receiver.
+- `connection->send()` checks the time gap between now and `last_port_choice`, `last_roundtrip_success`.
+- `connection->send()` calls `hop_port()`, if the time gap is greater than `PORT_HOP_INTERVAL`.
+  - `hop_port()` aka `Connection::hop_port()`. `hop_port()` only works for client.
+  - `hop_port()` calls `setup()` to update `last_port_choice`.
+  - `hop_port()` creates a new `Socket` object and calls `socks.push_back()` to save it in `socks` list.
+  - `hop_port()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
 
 #### How to receive the screen from the server.
 
