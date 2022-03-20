@@ -11,7 +11,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 
     try {
       success = client.main();
-    } catch ( ... ) {
+    } catch ( Exception e) {
       client.shutdown();
       throw;
     }
@@ -29,7 +29,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - Set the `ip`,`port`,`key`,`predict_mode`,`verbose` parameter. Here, `network` is `NULL`.
 - `Overlay::OverlayManager overlays` is initialized in construction function.
   - `overlays` contains `NotificationEngine`, `PredictionEngine`, `TitleEngine`. The design of these engine is unclear.
-- `Terminal::Display display` is initialized in construction function.
+- `Terminal::Display` is initialized in construction function.
   - `display` uses `Ncurses` libtool to setup the terminal.
 
 ### STMClient::init
@@ -220,8 +220,8 @@ In the main loop(while loop), It performs the following steps:
 TODO What's the behavior of the serverside.
 TODO what the purpose of `overlay`.
 TODO what the meaning of `display`.
-TODO how to receive network input.
 TODO In fragment, if f.contents size is smaller than MTU, how to know the content size?
+TODO how to receive network input.
 -->
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
@@ -234,19 +234,31 @@ TODO In fragment, if f.contents size is smaller than MTU, how to know the conten
 - `network->recv()` calls [`connection.recv()`](#how-to-read-data-from-socket) to receive the payload string.
 - `network->recv()` calls `Fragment(const string& x)` to [build a `Fragment` object](#how-to-create-the-frament-from-string) from the payload string.
 - `network->recv()` calls `fragments.add_fragment()` [get the complete packet](#how-to-get-the-complete-packet).
-- `network->recv()` calls `fragments.get_assembly()` to build the `Instruction`.
-- `network->recv()` calls `sender.process_acknowledgment_through()` to update `last_roundtrip_success`.
-- The above implementation means that last send timestamp is saved as `last_roundtrip_success`.
-- `network->recv()` makes sure we don't already have the new state?
-- `network->recv()` makes sure we do have the old state.
+- `network->recv()` calls `fragments.get_assembly()` to [build the `Instruction` object](#how-to-build-instruction-from-fragments).
+- `network->recv()` calls `sender.process_acknowledgment_through()` to TODO?
+- `network->recv()` calls `connection.set_last_roundtrip_success()` to update `last_roundtrip_success`.
+  - The above implementation means that last send timestamp is saved as `last_roundtrip_success`.
+- `network->recv()` checks the `Instruction.new_num` does not exist in `received_states`.
+  - The above implementation makes sure we don't already have the new state.
+- `network->recv()` checks the `Instruction.old_num` does exist in `received_states`.
+  - The above implementation makes sure we do have the old state.
 - `network->recv()` throws away the unnecessary state via `process_throwaway_until()`.
-- `network->recv()` limit on state queue.
+- `network->recv()` limit on state queue?
 - `network->recv()` apply diff to reference state.
 - `network->recv()` Insert new state in sorted place.
 - `network->recv()` calls `received_states.push_back()` to store the received state.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
 - `network->recv()` calls `sender.remote_heard()` to set last time received new state.
 - `network->recv()` calls `sender.set_data_ack()` to accelerate reply ack.
+
+#### How to build instruction from fragments
+
+- `fragments.get_assembly()` aka `FragmentAssembly::get_assembly()`
+- `get_assembly()` concatenates the `contents` field of each `Fragment` into one piece.
+- `get_assembly()` calls `get_compressor().uncompress_str()` to decompress the string.
+- `get_assembly()` calls `ret.ParseFromString()` to build the `Instruction` object.
+- `get_assembly()` clears the fragments, reset `fragments_arrived` and `fragments_total`.
+- `get_assembly()` returns the `Instruction` object.
 
 #### How to get the complete packet
 
