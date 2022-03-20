@@ -230,38 +230,44 @@ In the main loop(while loop), It performs the following steps:
 ### How to send a packet?
 
 - `connection->send()` aka `Connection::send()`.
-- `connection->send()` calls `new_packet()` to create a `Packet`.?
+- `connection->send()` calls `new_packet()` to create a `Packet`.
+  - `timestamp_reply` means?
   - `Packet` is of type `Network::Packet`.
   - Besides the `payload` field,
   - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
 - `connection->send()` calls `session.encrypt()` to encrypt the `Packet`.
 - `connection->send()` calls `sendto()` system call to send the encrypted data to receiver.
+  - `sendto()` use the last socket from socket list to send the encrypted data.
 - `connection->send()` checks the time gap between now and `last_port_choice`, `last_roundtrip_success`.
-- `connection->send()` calls `hop_port()`, if the time gap is greater than `PORT_HOP_INTERVAL`.
-  - `hop_port()` aka `Connection::hop_port()`. `hop_port()` only works for client.
-  - `hop_port()` calls `setup()` to update `last_port_choice`.
-  - `hop_port()` creates a new `Socket` object and calls `socks.push_back()` to save it in `socks` list.
-  - `hop_port()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
+- `connection->send()` calls [`hop_port()`](#how-does-the-client-roam), if the time gap is greater than `PORT_HOP_INTERVAL`.
+
+#### How does the client roam.
+
+- `hop_port()` aka `Connection::hop_port()`. `hop_port()` only works for client.
+- `hop_port()` calls `setup()` to update `last_port_choice`.
+- `hop_port()` creates a new `Socket` object and calls `socks.push_back()` to save it in `socks` list.
+- `hop_port()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
+- `last_port_choice` is changed, when a new `Socket` is created.
+- `last_roundtrip_success` is changed, when a new datagram is received.
+- `PORT_HOP_INTERVAL` is 10s. Which means every 10 seconds a new socket is added to the socket list.
 
 #### How to receive the screen from the server.
 
 <!--
-TODO why there is a socket list in `Connection.socks`? see `socks.push_back()` and `hop_port()`.
+TODO What's the behavior of the serverside.
 TODO what the purpose of `overlay`.
+TODO what the meaning of `display`.
 -->
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
 - `process_network_input()` aka `STMClient::process_network_input()`
 - `process_network_input()` calls `network->recv()` to receive the data from server.
 - `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
-- `network->recv()` calls `connection.recv()` to receive the data.
-  - `connection.recv()` aka `Connection::recv()`
-  - `connection.recv()` calls [`recv_one()`](#how-to-receive-datagram-from-server) on the first `Socket` in `socks`.
-  - If [`recv_one()`](#how-to-receive-datagram-from-server) returns `EAGAIN` or `EWOULDBLOCK`, try the next `Socket` in `socks` until the last one.
-  - `connection.recv()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
-  - `connection.recv()` returns the `payload` got from `recv_one()`.
+- `network->recv()` calls [`connection.recv()`](#how-to-read-data-from-socket) to receive the data.
 - `network->recv()` calls `fragments.add_fragment()` get the complete packet.
 - `network->recv()` calls `fragments.get_assembly()` to build the `Instruction`.
+- `network->recv()` calls `sender.process_acknowledgment_through()` to update `last_roundtrip_success`.
+- The above implementation means that last send timestamp is saved as `last_roundtrip_success`.
 - `network->recv()` makes sure we don't already have the new state?
 - `network->recv()` makes sure we do have the old state.
 - `network->recv()` throws away the unnecessary state via `process_throwaway_until()`.
@@ -272,6 +278,14 @@ TODO what the purpose of `overlay`.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
 - `network->recv()` calls `sender.remote_heard()` to set last time received new state.
 - `network->recv()` calls `sender.set_data_ack()` to accelerate reply ack.
+
+#### How to read data from socket
+
+- `connection.recv()` aka `Connection::recv()`
+- `connection.recv()` calls [`recv_one()`](#how-to-receive-datagram-from-server) on the first `Socket` in `socks`.
+- If [`recv_one()`](#how-to-receive-datagram-from-server) returns `EAGAIN` or `EWOULDBLOCK`, try the next `Socket` in `socks` until the last one.
+- `connection.recv()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
+- `connection.recv()` returns the `payload` got from `recv_one()`.
 
 #### How to prune the sockets.
 
@@ -292,12 +306,12 @@ TODO what the purpose of `overlay`.
     - `recv_one()` signals counterparty to slow down via decrease `saved_timestamp`, if congestion is detected.
     - `recv_one()` calculates `SRTT` and `RTTVAR` based on each [RTT](https://datatracker.ietf.org/doc/html/rfc29880).
     - `recv_one()` updates `last_heard` with current time.
-  - For server side, [client roaming](#how-does-the-client-roam) is supported here.
+  - For server side, [client roaming](#how-does-the-server-support-client-roam) is supported here.
   - if packet sequence number is less than `expected_receiver_seq`
     - `recv_one()` return out-of-order or duplicated packets to caller, .
 - `recv_one()` return the `payload` to caller.
 
-#### How does the client roam
+#### How does the server support client roam
 
 - `recv_one()` compares `packet_remote_addr` with `remote_addr`.
 - If the packet remote address is different than remote address, update the `remote_addr` and `remote_addr_len`.
