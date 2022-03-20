@@ -129,12 +129,12 @@ In the main loop(while loop), It performs the following steps:
 - Add network sockets and `STDIN_FILENO` to the singleton `Select` object.
 - Wait for socket input or user keystroke or signal via `sel.select()`, within the `waittime` timeout.
 - Upon receive signals, the corresponding item in `Select.got_signal` array is set.
-- Upon network sockets is ready to read, process it with [`process_network_input()`](#how-to-receive-the-screen-from-the-server)`.
-- Upon user keystroke is ready to read, process it with [`process_user_input`](#how-to-process-the-user-input)
+- Upon network sockets is ready to read, process it with [`process_network_input()`](#how-to-process-the-network-input).
+- Upon user keystroke is ready to read, process it with [`process_user_input()`](#how-to-process-the-user-input)
 - Upon receive `SIGWINCH` signal, resize the terminal with `process_resize()`.
 - Upon receive `SIGCONT` signal, process it with `resume()`.
 - Upon receive `SIGTERM, SIGINT, SIGHUP, SIGPIPE` signals, showdown the process via `network->start_shutdown()`.
-- Perform `network->tick()` to synchronizes the data to the server.
+- Perform [`network->tick()`](#how-does-the-network-tick) to synchronizes the data to the server.
 
 #### How to process the user input
 
@@ -148,7 +148,7 @@ In the main loop(while loop), It performs the following steps:
   - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
   - `network->get_current_state().push_back()` adds `Parser::UserByte` to `UserStream`.
 
-#### How the network tick
+#### How does the network tick
 
 - `STMClient::main` calls `network->tick()` in the main loop.
 - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
@@ -254,7 +254,7 @@ In the main loop(while loop), It performs the following steps:
 - `last_roundtrip_success` is changed, when a new datagram is received.
 - `PORT_HOP_INTERVAL` is 10s. Which means every 10 seconds a new socket is added to the socket list.
 
-#### How to receive the screen from the server.
+#### How to process the network input
 
 <!--
 TODO What's the behavior of the serverside.
