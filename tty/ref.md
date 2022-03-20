@@ -139,18 +139,21 @@ In the main loop(while loop), It performs the following steps:
 #### How to process the user input
 
 - `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
-- `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
-- `process_user_input()` check the input character, for `LF`, `CR` etc. special character, they should be treated accordingly.
+- `process_user_input()` aka `STMClient::process_user_input()`.
+- `process_user_input()` calls `read()` system call to read the user keystrokes.
+- `process_user_input()` check the input character,
+- If it get the `LF`, `CR` character, set `repaint_requested` to be true.
 - For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
   - `network->get_current_state()` is actually `TransportSender.get_current_state()`.
   - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
   - Here the keystroke is wrapped in `Parser::UserByte`.
   - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
   - `network->get_current_state().push_back()` adds `Parser::UserByte` to `UserStream`.
+- The result of `process_user_input()` is that all the user keystrokes are saved in current state.
 
 #### How does the network tick
 
-- `STMClient::main` calls `network->tick()` in the main loop.
+- `STMClient::main` calls `network->tick()` in the main loop to procee the data in current state.
 - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
 - `sender.tick()` aka `TransportSender<MyState>::tick()`
 - `sender.tick()` calls `calculate_timers()` to calculate next send and ack times.
@@ -177,15 +180,15 @@ In the main loop(while loop), It performs the following steps:
 #### How to calculate the diff (client side)
 
 - `current_state.diff_from()` aka `UserStream::diff_from()`, who calculate diff based on user keystrokes.
-  - `diff_from()` compares `current_state` with `assumed_receiver_state` to calculate the diff.
-  - For client side:
-    - `diff_from()` compares two `UserStream` object.
-    - `diff_from()` finds the different position and build `ClientBuffers::UserMessage`, which is a proto2 message.
-    - `diff_from()` returns the serialized string for the `ClientBuffers::UserMessage` object.
-    - `UserMessage` contains several `ClientBuffers.Instruction`.
-    - `ClientBuffers.Instruction` is composed of `Keystroke` or `ResizeMessage` (see userinput.proto file)
-    - Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
-    - `ResizeMessage` is added to one `ClientBuffers.Instruction`.
+- `diff_from()` compares `current_state` with `assumed_receiver_state` to calculate the diff.
+- For client side:
+  - `diff_from()` compares two `UserStream` object.
+  - `diff_from()` finds the different position and build `ClientBuffers::UserMessage`, which is a proto2 message.
+  - `diff_from()` returns the serialized string for the `ClientBuffers::UserMessage` object.
+  - `UserMessage` contains several `ClientBuffers.Instruction`.
+  - `ClientBuffers.Instruction` is composed of `Keystroke` or `ResizeMessage` (see userinput.proto file)
+  - Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
+  - `ResizeMessage` is added to one `ClientBuffers.Instruction`.
 
 #### How to pick the reciver state
 
