@@ -2,16 +2,16 @@
 
 ## SSP design in [mosh research paper](https://mosh.org/mosh-paper.pdf)
 
-- SSP is organized into two layers. A datagram layer sends UDP packets over the network, and a transport layer is responsible for conveying the current object state to the remote host.
+SSP is organized into two layers. A datagram layer sends UDP packets over the network, and a transport layer is responsible for conveying the current object state to the remote host.
 
 ### Datagram Layer
 
-The datagram layer maintains the “roaming” connection. It accepts opaque payloads from the transport layer, prepends an incrementing sequence number, encrypts the packet, and sends the resulting ciphertext in a UDP datagram. It is responsible for estimating the timing characteristics of the link and keeping track of the client’s current public IP address. See [the implementation](#how-to-send-data-to-server)
+The datagram layer maintains the “roaming” connection. It accepts opaque payloads from the transport layer, prepends an incrementing sequence number, encrypts the packet, and sends the resulting ciphertext in a UDP datagram. It is responsible for estimating the timing characteristics of the link and keeping track of the client’s current public IP address.
 
 - Client roaming.
-  - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.” See [the implementation](#how-does-the-client-roam).
-- Estimating round-trip time and RTT variation. See [the implementation](#how-to-receive-the-screen-from-the-server).
-  - Every outgoing datagram contains a millisecond timestamp and an optional “timestamp reply,” containing the most recently received timestamp from the remote host.
+  - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.” See [the client implementation](#how-does-the-client-roam) and [the server implementation](#how-does-the-server-support-client-roam).
+- Estimating round-trip time and RTT variation. See [RTT and RTTVAR calculation](#how-to-receive-datagram-from-server).
+  - Every outgoing datagram contains a millisecond timestamp and an optional “timestamp reply,” containing the most recently received timestamp from the remote host. See [the implementation](#how-to-send-a-packet)
   - SSP adjusts the “timestamp reply” by the amount of time since it received the corresponding timestamp.
 
 ### Transport Layer
@@ -34,7 +34,7 @@ The transport layer synchronizes the contents of the local state to the remote h
 ## SSP design in [github.com](https://github.com/mobile-shell/mosh/issues/1087#issuecomment-641801909)
 
 - The sender always sends diffs. There is no "full update" instruction.
-- The diff has three important fields: the source, target, and throwaway number. See [the implementation](#how-to-send-data-to-server).
+- The diff has three important fields: the source, target, and throwaway number. See [the `Instruction` implementation](#how-to-send-data-in-fragments).
   - The target of the diff is always the current sender-side state.
   - The throwaway number of the diff is always the most recent state that has been explicitly acknowledged by the receiver.
   - The source of the diff is allowed to be:
@@ -139,23 +139,39 @@ In the main loop(while loop), It performs the following steps:
 #### How to process the user input
 
 - `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
-  - `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
-  - `process_user_input()` check the input character, for `LF`, `CR` etc. special character, they should be treated accordingly.
-  - For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
-    - `network->get_current_state()` is actually `TransportSender.get_current_state()`.
-    - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
-    - Here the keystroke is wrapped in `Parser::UserByte`.
-    - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
-    - `network->get_current_state().push_back()` adds `Parser::UserByte` to `UserStream`.
+- `process_user_input()` aka `STMClient::process_user_input()` calls `read()` system call to read the user keystrokes.
+- `process_user_input()` check the input character, for `LF`, `CR` etc. special character, they should be treated accordingly.
+- For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
+  - `network->get_current_state()` is actually `TransportSender.get_current_state()`.
+  - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
+  - Here the keystroke is wrapped in `Parser::UserByte`.
+  - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
+  - `network->get_current_state().push_back()` adds `Parser::UserByte` to `UserStream`.
+
+#### How the network tick
+
 - `STMClient::main` calls `network->tick()` in the main loop.
-  - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
-  - `sender.tick()` aka `TransportSender<MyState>::tick()`
-  - `sender.tick()` calls `calculate_timers()` to calculate next send and ack times.
-    - `calculate_timers()` aka `TransportSender<MyState>::calculate_timers()`.
-    - `calculate_timers()` calls [`update_assumed_receiver_state()`](#how-to-pick-the-reciver-state) to update assumed receiver state.
-    - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
-    - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
-  - `sender.tick()` calls `current_state.diff_from()` to calculate diff. See [next](#how-to-calculate-the-diff-client-side) step.
+- `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
+- `sender.tick()` aka `TransportSender<MyState>::tick()`
+- `sender.tick()` calls `calculate_timers()` to calculate next send and ack times.
+  - `calculate_timers()` aka `TransportSender<MyState>::calculate_timers()`.
+  - `calculate_timers()` calls [`update_assumed_receiver_state()`](#how-to-pick-the-reciver-state) to update assumed receiver state.
+  - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
+  - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
+- `sender.tick()` calls `current_state.diff_from()` to [calculate diff](#how-to-calculate-the-diff-client-side).
+- If `diff` is empty and if it's greater than the `next_ack_time`.
+  - `sender.tick()` calls `send_empty_ack()` to send ack.
+  - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
+  - `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
+- If `diff` is not empty and if it's greater than `next_send_time` or `next_ack_time`.
+  - `sender.tick()` calls `send_to_receiver()` to send diffs.
+  - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
+  - `send_to_receiver()` calls `add_sent_state()` to send a new state.
+  - `add_sent_state()` adds the new state to `sent_states` and limits the size of `send_states` list.
+  - Or `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
+  - Note `sent_states` is list of type `TimestampedState`, while `current_state` is of type `MyState`.
+  - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
+  - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
 #### How to calculate the diff (client side)
 
@@ -170,19 +186,6 @@ In the main loop(while loop), It performs the following steps:
     - Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
     - `ResizeMessage` is added to one `ClientBuffers.Instruction`.
 - `diff_from()` calls `attempt_prospective_resend_optimization()` to investigate diff against known receiver state.
-- If `diff` is empty and if it's greater than the `next_ack_time`.
-  - `sender.tick()` calls `send_empty_ack()` to send ack.
-  - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
-  - `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
-- If `diff` is not empty and if it's greater than `next_send_time` or `next_ack_time`.
-  - `sender.tick()` calls `send_to_receiver()` to send diffs.
-  - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
-  - `send_to_receiver()` calls `add_sent_state()` to send a new state.
-  - `add_sent_state()` adds the new state to `sent_states` and limits the size of `send_states` list.
-  - Or `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
-  - Note `sent_states` is list of type `TimestampedState`, while `current_state` is of type `MyState`.
-  - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-to-server) to send data.
-  - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
 #### How to pick the reciver state
 
@@ -210,7 +213,7 @@ In the main loop(while loop), It performs the following steps:
   - The result is the caller of `subtract()` cut out common prefix.
 - The result is that the common prefix in `current_state` and `sent_states` is cut out.
 
-#### How to send data to server.
+#### How to send data in fragments
 
 - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
 - `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in [previous](#how-to-calculate-the-diff-client-side) step.
@@ -225,7 +228,7 @@ In the main loop(while loop), It performs the following steps:
   - The `payload` string is split into fragments based on the size of `MTU`,
   - The default size of `MTU` is 1280.
   - The fragments is saved in `Fragment` vector.
-- `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server. See [next](#how-to-send-a-packet) step.
+- `send_in_fragments()` calls [`connection->send()`](#how-to-send-a-packet) to send each `Fragment` to the server.
 
 ### How to send a packet?
 
