@@ -228,8 +228,12 @@ In the main loop(while loop), It performs the following steps:
   - `ack_num` field is the ack number. It's value is assigned by `ack_num`.
 - `send_in_fragments()` calls `Fragmenter::make_fragments` to splits the `TransportBuffers.Instruction` into `Fragment`.
   - `make_fragments()` serializes `TransportBuffers.Instruction` into string and compresses it to string `payload`.
-  - The `payload` string is split into fragments based on the size of `MTU`,
+  - `make_fragments()` splits the `payload` string into fragments based on the size of `MTU`,
   - The default size of `MTU` is 1280.
+  - Fragment has a `id` field, which is the instruction id. It's the same id for all the fragment.
+  - Fragment has a `fragment_num` field, which starts from zero, and is increased one for each new fragment.
+  - Fragment has a `final` field, which is used to indicate the last fragment.
+  - Fragment has a `contents` field, which contains part of the instruction.
   - The fragments is saved in `Fragment` vector.
 - `send_in_fragments()` calls [`connection->send()`](#how-to-send-a-packet) to send each `Fragment` to the server.
 
@@ -263,11 +267,15 @@ In the main loop(while loop), It performs the following steps:
 TODO What's the behavior of the serverside.
 TODO what the purpose of `overlay`.
 TODO what the meaning of `display`.
+TODO how to receive network input.
 -->
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
 - `process_network_input()` aka `STMClient::process_network_input()`
-- `process_network_input()` calls `network->recv()` to receive the data from server.
+- `process_network_input()` calls [`network->recv()`](#how-to-receive-network-input) to receive network input.
+
+#### How to receive network input
+
 - `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
 - `network->recv()` calls [`connection.recv()`](#how-to-read-data-from-socket) to receive the data.
 - `network->recv()` calls `fragments.add_fragment()` get the complete packet.
