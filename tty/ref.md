@@ -226,12 +226,19 @@ In the main loop(while loop), It performs the following steps:
   - The default size of `MTU` is 1280.
   - The fragments is saved in `Fragment` vector.
 - `send_in_fragments()` calls `connection->send()` to send each `Fragment` to the server.
-- `connection->send()` aka `Connection::send()`.
-- `Connection::send()` calls `new_packet()` to create a `Packet`.
-  - Besides the `payload` field,
-  - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
-- `Connection::send()` calls `session.encrypt()` to encrypt the `Packet`.
-- `Connection::send()` calls `sendto()` system call to send the real datagram to receiver.
+  - `connection->send()` aka `Connection::send()`.
+  - `connection->send()` calls `new_packet()` to create a `Packet`.?
+    - `Packet` is of type `Network::Packet`.
+    - Besides the `payload` field,
+    - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
+  - `connection->send()` calls `session.encrypt()` to encrypt the `Packet`.
+  - `connection->send()` calls `sendto()` system call to send the encrypted data to receiver.
+  - `connection->send()` checks the time gap between now and `last_port_choice`, `last_roundtrip_success`.
+  - `connection->send()` calls `hop_port()`, if the time gap is greater than `PORT_HOP_INTERVAL`.
+    - `hop_port()` aka `Connection::hop_port()`. `hop_port()` only works for client.
+    - `hop_port()` calls `setup()` to update `last_port_choice`.
+    - `hop_port()` creates a new `Socket` object and calls `socks.push_back()` to save it in `socks` list.
+    - `hop_port()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
 
 #### How to receive the screen from the server.
 
@@ -248,11 +255,8 @@ TODO what the purpose of `overlay`.
   - `connection.recv()` aka `Connection::recv()`
   - `connection.recv()` calls [`recv_one()`](#how-to-receive-datagram-from-server) on the first `Socket` in `socks`.
   - If [`recv_one()`](#how-to-receive-datagram-from-server) returns `EAGAIN` or `EWOULDBLOCK`, try the next `Socket` in `socks` until the last one.
-  - `connection.recv()` calls `prune_sockets()` to prune the old sockets.
-    - `prune_sockets()` aka `Connection::prune_sockets()`
-    - `prune_sockets()` removes old sockets if the new socket has been working for long enough.
-    - `prune_sockets()` make sure we don't have too many receive sockets open.
-  - `connection.recv()` return the `payload` got from `recv_one()`.
+  - `connection.recv()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
+  - `connection.recv()` returns the `payload` got from `recv_one()`.
 - `network->recv()` calls `fragments.add_fragment()` get the complete packet.
 - `network->recv()` calls `fragments.get_assembly()` to build the `Instruction`.
 - `network->recv()` makes sure we don't already have the new state?
@@ -265,6 +269,12 @@ TODO what the purpose of `overlay`.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
 - `network->recv()` calls `sender.remote_heard()` to set last time received new state.
 - `network->recv()` calls `sender.set_data_ack()` to accelerate reply ack.
+
+#### How to prune the sockets.
+
+- `prune_sockets()` aka `Connection::prune_sockets()`
+- `prune_sockets()` removes old sockets if the new socket has been working for long enough.
+- `prune_sockets()` makes sure we don't have too many receive sockets open.
 
 #### How to receive datagram from server
 
