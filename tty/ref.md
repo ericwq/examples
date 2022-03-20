@@ -9,7 +9,7 @@
 The datagram layer maintains the “roaming” connection. It accepts opaque payloads from the transport layer, prepends an incrementing sequence number, encrypts the packet, and sends the resulting ciphertext in a UDP datagram. It is responsible for estimating the timing characteristics of the link and keeping track of the client’s current public IP address. See [the implementation](#how-to-send-data-to-server)
 
 - Client roaming.
-  - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.”
+  - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.” See [the implementation](#how-does-the-client-roam).
 - Estimating round-trip time and RTT variation. See [the implementation](#how-to-receive-the-screen-from-the-server).
   - Every outgoing datagram contains a millisecond timestamp and an optional “timestamp reply,” containing the most recently received timestamp from the remote host.
   - SSP adjusts the “timestamp reply” by the amount of time since it received the corresponding timestamp.
@@ -280,8 +280,25 @@ TODO what the purpose of `overlay`.
 
 - `recv_one()` aka `Connection::recv_one()`
 - `recv_one()` calls `recvmsg()` system call to receive data from socket.
-- `recv_one()` calls `session.decrypt()` to decrypt the received message and create a `Packet` object.
-- `recv_one()` calcuates `SRTT` and `RTTVAR` based on each [RTT](https://datatracker.ietf.org/doc/html/rfc29880).
+- `recv_one()` calls `session.decrypt()` to decrypt the received message.
+- `recv_one()` creates a `Packet` object based on the decrypted data.
+- `recv_one()` checks `Packet`'s sequence number to make sure it is greater than the `expected_receiver_seq`.
+  - if packet sequence number is greater than `expected_receiver_seq`,
+    - `recv_one()` increases `expected_receiver_seq`.
+    - `recv_one()` saves the `p.timestamp` in `saved_timestamp`, saves the time in `saved_timestamp_received_at`.
+    - `recv_one()` signals counterparty to slow down via decrease `saved_timestamp`, if congestion is detected.
+    - `recv_one()` calculates `SRTT` and `RTTVAR` based on each [RTT](https://datatracker.ietf.org/doc/html/rfc29880).
+    - `recv_one()` updates `last_heard` with current time.
+  - For server side, [client roaming](#how-does-the-client-roam) is supported here.
+  - if packet sequence number is less than `expected_receiver_seq`
+    - `recv_one()` return out-of-order or duplicated packets to caller, .
+- `recv_one()` return the `payload` to caller.
+
+#### How does the client roam
+
+- `recv_one()` compares `packet_remote_addr` with `remote_addr`.
+- If the packet remote address is different than remote address, update the `remote_addr` and `remote_addr_len`.
+- `recv_one()` calls `getnameinfo()` to validate the new remote address.
 
 ## reference
 
