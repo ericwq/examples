@@ -10,7 +10,7 @@ The datagram layer maintains the “roaming” connection. It accepts opaque pay
 
 - Client roaming.
   - Every time the server receives an authentic datagram from the client with a sequence number greater than any before, it sets the packet’s source IP address and UDP port number as its new “target.” See [the client implementation](#how-does-the-client-roam) and [the server implementation](#how-does-the-server-support-client-roam).
-- Estimating round-trip time and RTT variation. See [RTT and RTTVAR calculation](#how-to-receive-datagram-from-server).
+- Estimating round-trip time and RTT variation. See [RTT and RTTVAR calculation](#how-to-receive-datagram-from-socket).
   - Every outgoing datagram contains a millisecond timestamp and an optional “timestamp reply,” containing the most recently received timestamp from the remote host. See [the implementation](#how-to-send-a-packet)
   - SSP adjusts the “timestamp reply” by the amount of time since it received the corresponding timestamp.
 
@@ -159,6 +159,7 @@ In the main loop(while loop), It performs the following steps:
   - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
   - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
 - `sender.tick()` calls `current_state.diff_from()` to [calculate diff](#how-to-calculate-the-diff-client-side).
+- `sender.tick()` calls `attempt_prospective_resend_optimization()` to optimize diff.
 - If `diff` is empty and if it's greater than the `next_ack_time`.
   - `sender.tick()` calls `send_empty_ack()` to send ack.
   - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
@@ -185,7 +186,6 @@ In the main loop(while loop), It performs the following steps:
     - `ClientBuffers.Instruction` is composed of `Keystroke` or `ResizeMessage` (see userinput.proto file)
     - Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
     - `ResizeMessage` is added to one `ClientBuffers.Instruction`.
-- `diff_from()` calls `attempt_prospective_resend_optimization()` to investigate diff against known receiver state.
 
 #### How to pick the reciver state
 
@@ -285,8 +285,8 @@ TODO what the meaning of `display`.
 #### How to read data from socket
 
 - `connection.recv()` aka `Connection::recv()`
-- `connection.recv()` calls [`recv_one()`](#how-to-receive-datagram-from-server) on the first `Socket` in `socks`.
-- If [`recv_one()`](#how-to-receive-datagram-from-server) returns `EAGAIN` or `EWOULDBLOCK`, try the next `Socket` in `socks` until the last one.
+- `connection.recv()` calls [`recv_one()`](#how-to-receive-datagram-from-socket) on the first `Socket` in `socks`.
+- If [`recv_one()`](#how-to-receive-datagram-from-socket) returns `EAGAIN` or `EWOULDBLOCK`, try the next `Socket` in `socks` until the last one.
 - `connection.recv()` calls [`prune_sockets()`](#how-to-prune-the-sockets) to prune the old sockets.
 - `connection.recv()` returns the `payload` got from `recv_one()`.
 
@@ -296,7 +296,7 @@ TODO what the meaning of `display`.
 - `prune_sockets()` removes old sockets if the new socket has been working for long enough.
 - `prune_sockets()` makes sure we don't have too many receive sockets open.
 
-#### How to receive datagram from server
+#### How to receive datagram from socket
 
 - `recv_one()` aka `Connection::recv_one()`
 - `recv_one()` calls `recvmsg()` system call to receive data from socket.
