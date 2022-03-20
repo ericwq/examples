@@ -268,6 +268,7 @@ TODO What's the behavior of the serverside.
 TODO what the purpose of `overlay`.
 TODO what the meaning of `display`.
 TODO how to receive network input.
+TODO In fragment, if f.contents size is smaller than MTU, how to know the content size?
 -->
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
@@ -277,8 +278,9 @@ TODO how to receive network input.
 #### How to receive network input
 
 - `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
-- `network->recv()` calls [`connection.recv()`](#how-to-read-data-from-socket) to receive the data.
-- `network->recv()` calls `fragments.add_fragment()` get the complete packet.
+- `network->recv()` calls [`connection.recv()`](#how-to-read-data-from-socket) to receive the payload string.
+- `network->recv()` calls `Fragment(const string& x)` to [build a `Fragment` object](#how-to-create-the-frament-from-string) from the payload string.
+- `network->recv()` calls `fragments.add_fragment()` [get the complete packet](#how-to-get-the-complete-packet).
 - `network->recv()` calls `fragments.get_assembly()` to build the `Instruction`.
 - `network->recv()` calls `sender.process_acknowledgment_through()` to update `last_roundtrip_success`.
 - The above implementation means that last send timestamp is saved as `last_roundtrip_success`.
@@ -292,6 +294,23 @@ TODO how to receive network input.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
 - `network->recv()` calls `sender.remote_heard()` to set last time received new state.
 - `network->recv()` calls `sender.set_data_ack()` to accelerate reply ack.
+
+#### How to get the complete packet
+
+- `fragments.add_fragment()` adds a frament into the `fragments`
+- `fragments` is of type `FragmentAssembly`.
+- `fragments.add_fragment()` checks fragment id and fragment final flag, adds new fragment to vector.
+- `fragments.add_fragment()` returns true if the final fragment is received.
+- Otherwise, `fragments.add_fragment()` returns false.
+
+#### How to create the frament from string
+
+- From the `Fragment::tostring()`, the format of the network fragment data is:
+  - The `id` field, which is `uint64_t`, contains the fragment id.
+  - The `fragment_num` field, which is `uint16_t`, contains the fragment number and fragment final flag.
+  - The `contents` field, which is `string`, contains the fragment payload.
+- `Fragment(const string& x)` constructs the `Fragment` using the above format.
+- `Fragment(const string& x)` returns one `Fragment`.
 
 #### How to read data from socket
 
