@@ -235,23 +235,24 @@ TODO In fragment, if f.contents size is smaller than MTU, how to know the conten
 - `network->recv()` calls `fragments.add_fragment()` [get the complete packet](#how-to-get-the-complete-packet).
 - `network->recv()` calls `fragments.get_assembly()` to [build the `Instruction` object](#how-to-build-instruction-from-fragments).
 - `network->recv()` calls `sender.process_acknowledgment_through()` to remove states from `send_states`.
-  - The above implementation removes any `sent_states` whose `num` field is less than `ack_num`.
+  - It removes any `sent_states` whose `num` field is less than `ack_num`.
 - `network->recv()` calls `connection.set_last_roundtrip_success()` to update `last_roundtrip_success`.
-  - The above implementation means that last send timestamp is saved as `last_roundtrip_success`.
+  - It means that last send timestamp is saved as `last_roundtrip_success`.
 - `network->recv()` checks the `Instruction.new_num` does not exist in `received_states`.
-  - The above implementation makes sure we don't already have the new state.
+  - It makes sure we don't already have the new state.
 - `network->recv()` checks the `Instruction.old_num` does exist in `received_states`.
-  - The above implementation makes sure we do have the old state.
+  - It makes sure we do have the old state.
 - `network->recv()` throws away the unnecessary state via `process_throwaway_until()`.
   - Any state whose `num` field less than `throwaway_num` is thrown away.
 - `network->recv()` limit on state queue
   - If `received_states.size() < 1024` and current time is less than `receiver_quench_timer`, drop the received state.
   - The value of `receiver_quench_timer` is 15000ms.
 - `network->recv()` applies `diff` to reference state, if `diff` is not empty.
-  - The above implementation creates a new state, which applies the `diff` to the reference state.
+  - It creates a new state, which applies the `diff` to the reference state.
 - `network->recv()` inserts new state if out-of-order state is received, `network->recv()` returns directly.
 - `network->recv()` calls `received_states.push_back()` to store the new state.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
+  - It means the `sender` set `ack_num` got from the `received_states` number.
 - `network->recv()` calls `sender.remote_heard()` to set `last_heard`: last time received new state.
 - `network->recv()` calls `sender.set_data_ack()` to set `pending_data_ack`: accelerate reply ack.
 
