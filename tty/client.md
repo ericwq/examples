@@ -126,7 +126,7 @@ In the main loop(while loop), It performs the following steps:
   - `send_to_receiver()` calls `add_sent_state()` to send a new state.
   - `add_sent_state()` adds the new state to `sent_states` and limits the size of `send_states` list.
   - Or `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
-  - Note `sent_states` is list of type `TimestampedState`, while `current_state` is of type `MyState`.
+  - Note `sent_states` is type of list `TimestampedState`, while `current_state` is type of `MyState`.
   - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
   - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
@@ -147,7 +147,7 @@ In the main loop(while loop), It performs the following steps:
 
 - `update_assumed_receiver_state()` chooses a most recent receiver state based on network traffic.
 - `update_assumed_receiver_state()` picks the first item in `send_state`.
-- `send_state` is of type `list<TimestampedState<MyState>>`.
+- `send_state` is type of `list<TimestampedState<MyState>>`.
 - `send_state` skips the first item.
 - For each item in `send_state`, if the time gap is lower than `connection->timeout()`. Update `assumed_receiver_state`.
   - `connection->timeout()` aka `Connection::timeout()`.
@@ -159,7 +159,7 @@ In the main loop(while loop), It performs the following steps:
 
 - `rationalize_states()` aka `TransportSender<MyState>::rationalize_states()`.
 - `rationalize_states()` picks the first state from `sent_states` as common prefix.
-  - `sent_states` is of type `list<TimestampedState<MyStat>>`.
+  - `sent_states` is type of `list<TimestampedState<MyStat>>`.
 - The comm prefix is the first state in `send_state`.
 - `rationalize_states()` calls `current_state.subtract()` to cut out common prefix from `current_state`.
 - `rationalize_states()` calls `i->state.subtract()` to cut out common prefix for all states in `sent_states`.
@@ -195,7 +195,7 @@ In the main loop(while loop), It performs the following steps:
 - `connection->send()` aka `Connection::send()`.
 - `connection->send()` calls `new_packet()` to create a `Packet`.
   - `timestamp_reply` means?
-  - `Packet` is of type `Network::Packet`.
+  - `Packet` is type of `Network::Packet`.
   - Besides the `payload` field,
   - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
 - `connection->send()` calls `session.encrypt()` to encrypt the `Packet`.
@@ -221,7 +221,6 @@ TODO What's the behavior of the serverside.
 TODO what the purpose of `overlay`.
 TODO what the meaning of `display`.
 TODO In fragment, if f.contents size is smaller than MTU, how to know the content size?
-TODO how to receive network input.
 -->
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
@@ -235,7 +234,8 @@ TODO how to receive network input.
 - `network->recv()` calls `Fragment(const string& x)` to [build a `Fragment` object](#how-to-create-the-frament-from-string) from the payload string.
 - `network->recv()` calls `fragments.add_fragment()` [get the complete packet](#how-to-get-the-complete-packet).
 - `network->recv()` calls `fragments.get_assembly()` to [build the `Instruction` object](#how-to-build-instruction-from-fragments).
-- `network->recv()` calls `sender.process_acknowledgment_through()` to TODO?
+- `network->recv()` calls `sender.process_acknowledgment_through()` to remove states from `send_states`.
+  - The above implementation removes any `sent_states` whose `num` field is less than `ack_num`.
 - `network->recv()` calls `connection.set_last_roundtrip_success()` to update `last_roundtrip_success`.
   - The above implementation means that last send timestamp is saved as `last_roundtrip_success`.
 - `network->recv()` checks the `Instruction.new_num` does not exist in `received_states`.
@@ -243,13 +243,17 @@ TODO how to receive network input.
 - `network->recv()` checks the `Instruction.old_num` does exist in `received_states`.
   - The above implementation makes sure we do have the old state.
 - `network->recv()` throws away the unnecessary state via `process_throwaway_until()`.
-- `network->recv()` limit on state queue?
-- `network->recv()` apply diff to reference state.
-- `network->recv()` Insert new state in sorted place.
-- `network->recv()` calls `received_states.push_back()` to store the received state.
+  - Any state whose `num` field less than `throwaway_num` is thrown away.
+- `network->recv()` limit on state queue
+  - If `received_states.size() < 1024` and current time is less than `receiver_quench_timer`, drop the received state.
+  - The value of `receiver_quench_timer` is 15000ms.
+- `network->recv()` applies `diff` to reference state, if `diff` is not empty.
+  - The above implementation creates a new state, which applies the `diff` to the reference state.
+- `network->recv()` inserts new state if out-of-order state is received, `network->recv()` returns directly.
+- `network->recv()` calls `received_states.push_back()` to store the new state.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
-- `network->recv()` calls `sender.remote_heard()` to set last time received new state.
-- `network->recv()` calls `sender.set_data_ack()` to accelerate reply ack.
+- `network->recv()` calls `sender.remote_heard()` to set `last_heard`: last time received new state.
+- `network->recv()` calls `sender.set_data_ack()` to set `pending_data_ack`: accelerate reply ack.
 
 #### How to build instruction from fragments
 
@@ -263,7 +267,7 @@ TODO how to receive network input.
 #### How to get the complete packet
 
 - `fragments.add_fragment()` adds a frament into the `fragments`
-- `fragments` is of type `FragmentAssembly`.
+- `fragments` is type of `FragmentAssembly`.
 - `fragments.add_fragment()` checks fragment id and fragment final flag, adds new fragment to vector.
 - `fragments.add_fragment()` returns true if the final fragment is received.
 - Otherwise, `fragments.add_fragment()` returns false.
