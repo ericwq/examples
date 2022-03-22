@@ -52,19 +52,23 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - Set `IUTF8` flag for `termios`.
 - Set the terminal to raw mode, via `cfmakeraw()`.
 - Set the `termios` struct for `STDIN_FILENO`, via `tcsetattr()`.
-- Put terminal in application-cursor-key mode, via `swrite()` write `display.open()` to `STDOUT_FILENO`.
-  - `display.open()` aka `Display::open()`.
-  - `display.open()` returns a control sequence to set the application-cursor-key mode.
-  - Application Cursor Keys mode is a way for the server to change the control sequences sent by the arrow keys. In normal mode, the arrow keys send `ESC [A` through to `ESC [D`.
-  - In application mode, they send `ESC OA` through to `ESC OD`.
+- Put terminal in application-cursor-key mode, via `swrite()` write [`display.open()`](#the-application-cursor-key-mode) to `STDOUT_FILENO`.
 - Set terminal window title, via `overlays.set_title_prefix()`.
 - Set variable, `escape_key`, `escape_pass_key`, `escape_pass_key2`.
 - Set variable, `escape_key_help`.
-- Set string, via `overlays.get_notification_engine().set_escape_key_string()`.
+- Set `escape_key_string` string, via `overlays.get_notification_engine().set_escape_key_string()`.
   - `overlays.get_notification_engine()` returns `NotificationEngine`.
   - `set_escape_key_string()` aka `NotificationEngine::set_escape_key_string()`.
-  - `set_escape_key_string()` sets the `escape_key_string` field of `NotificationEngine`.
+  - `set_escape_key_string()` sets the `escape_key_string` field in `NotificationEngine` object.
 - Set variable `connecting_notification`.
+
+#### The application-cursor-key mode
+
+- `display.open()` aka `Display::open()`.
+- `display.open()` returns a control sequence to set the application-cursor-key mode.
+- Application Cursor Keys mode is a way for the server to change the control sequences sent by the arrow keys.
+- In normal mode, the arrow keys send `ESC [A` through to `ESC [D`.
+- In application mode, they send `ESC OA` through to `ESC OD`.
 
 #### How to check the UTF8 support
 
@@ -78,13 +82,6 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
   - `connection` is the underlying, encrypted network connection.
 
 ### STMClient::main
-
-<!--
-TODO What's the behavior of the serverside.
-TODO what the purpose of `overlay`.
-TODO what the meaning of `display`.
-TODO In fragment, if f.contents size is smaller than MTU, how to know the content size?
--->
 
 `STMClient::main()` calls [`main_init()`](#stmclientmain_init) to initialize signal handling and structures. In the main loop(while loop), It performs the following steps:
 
@@ -112,6 +109,12 @@ TODO In fragment, if f.contents size is smaller than MTU, how to know the conten
 - `output_new_frame()` sets `local_framebuffer` to the new state.
 
 #### STMClient::main_init
+
+<!--
+TODO What's the behavior of the serverside.
+TODO what the purpose of `overlay`.
+TODO what the meaning of `display`.
+-->
 
 In `client.main()`, `main_init()` is called to init the `mosh` client.
 
