@@ -44,7 +44,38 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - Set terminal window title, via `overlays.set_title_prefix()`. ?
 - Set escape key string, via `overlays.get_notification_engine().set_escape_key_string()`. ?
 
-### STMClient::main_init
+#### Transport<MyState, RemoteState>::Transport
+
+- Initialize the `connection`, initialize the sender with `connection` and `initial_state`.
+  - `connection` is the underlying, encrypted network connection.
+
+### STMClient::main
+
+`STMClient::main()` calls [`main_init()`](#stmclientmain_init) to initialize signal handling and structures. In the main loop(while loop), It performs the following steps:
+
+- Output terminal content to the `STDOUT_FILENO` via [`output_new_frame()`](#how-to-output-content).
+- Get the network sockets from `network->fds()`.
+- Add network sockets and `STDIN_FILENO` to the singleton `Select` object.
+- Wait for socket input or user keystroke or signal via `sel.select()`, within the `waittime` timeout.
+- Upon receive signals, the corresponding item in `Select.got_signal` array is set.
+- Upon network sockets is ready to read, process it with [`process_network_input()`](#how-to-process-the-network-input).
+- Upon user keystroke is ready to read, process it with [`process_user_input()`](#how-to-process-the-user-input)
+- Upon receive `SIGWINCH` signal, resize the terminal with `process_resize()`.
+- Upon receive `SIGCONT` signal, process it with `resume()`.
+- Upon receive `SIGTERM, SIGINT, SIGHUP, SIGPIPE` signals, showdown the process via `network->start_shutdown()`.
+- Perform [`network->tick()`](#how-does-the-network-tick) to synchronizes the data to the server.
+
+#### How to output content
+
+- `output_new_frame()` aka `STMClient::output_new_frame()`.
+- `output_new_frame()` gets the `Framebuffer` from the latest state in `received_states`.
+- `output_new_frame()` calls `overlays.apply()` to apply local overlays.
+- `output_new_frame()` calls `display.new_frame()` to calculate minimal `diff` from where we are.
+- `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
+- `output_new_frame()` sets `repaint_requested` to true.
+- `output_new_frame()` sets `local_framebuffer` to the new state.
+
+#### STMClient::main_init
 
 In `client.main()`, `main_init()` is called to init the `mosh` client.
 
@@ -67,27 +98,6 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - `network->get_current_state().push_back()` adds `Parser::Resize` to `UserStream`.
   - The `Parser::Resize` object is set with the current terminal window size.
 - Set the `verbose` mode via `network->set_verbose()`.
-
-### Transport<MyState, RemoteState>::Transport
-
-- Initialize the `connection`, initialize the sender with `connection` and `initial_state`.
-  - `connection` is the underlying, encrypted network connection.
-
-### STMClient::main
-
-In the main loop(while loop), It performs the following steps:
-
-- Output terminal content to the `STDOUT_FILENO` via `output_new_frame()`.
-- Get the network sockets from `network->fds()`.
-- Add network sockets and `STDIN_FILENO` to the singleton `Select` object.
-- Wait for socket input or user keystroke or signal via `sel.select()`, within the `waittime` timeout.
-- Upon receive signals, the corresponding item in `Select.got_signal` array is set.
-- Upon network sockets is ready to read, process it with [`process_network_input()`](#how-to-process-the-network-input).
-- Upon user keystroke is ready to read, process it with [`process_user_input()`](#how-to-process-the-user-input)
-- Upon receive `SIGWINCH` signal, resize the terminal with `process_resize()`.
-- Upon receive `SIGCONT` signal, process it with `resume()`.
-- Upon receive `SIGTERM, SIGINT, SIGHUP, SIGPIPE` signals, showdown the process via `network->start_shutdown()`.
-- Perform [`network->tick()`](#how-does-the-network-tick) to synchronizes the data to the server.
 
 #### How to process the user input
 
