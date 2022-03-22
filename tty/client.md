@@ -29,8 +29,21 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - Set the `ip`,`port`,`key`,`predict_mode`,`verbose` parameter. Here, `network` is `NULL`.
 - `Overlay::OverlayManager overlays` is initialized in construction function.
   - `overlays` contains `NotificationEngine`, `PredictionEngine`, `TitleEngine`. The design of these engine is unclear.
-- `Terminal::Display` is initialized in construction function.
-  - `display` uses `Ncurses` libtool to setup the terminal.
+- [`Terminal::Display`](#terminaldisplay) is initialized in construction function.
+
+#### Terminal::Display
+
+- `Display()` is initialized with true `use_environment`.
+- `Display()` calls [`setupterm()`](https://linux.die.net/man/3/setupterm) to reads in the `terminfo` database, initialize the `terminfo` structures.
+- `Display()` calls [`tigetstr()`](https://linux.die.net/man/3/setupterm) to check (erase character) [ech](https://pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html) support.
+- `Display()` calls [`tigetflag()`](https://linux.die.net/man/3/setupterm) to check (back color erase) [bce](https://pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html) support.
+- `Display()` get the `TERM` environment variable and compare it with the following value.
+  - `xterm`, `rxvt`, `kterm`, `Eterm`, `screen`
+- If `TERM` environment variable contains the above string, `has_title` is true.
+- `Display()` get the `MOSH_NO_TERM_INI` environment variable.
+- If `MOSH_NO_TERM_INI` environment variable is set,
+  - `Display()` calls [`tigetstr()`](https://linux.die.net/man/3/setupterm) to get the (enter ca mode) [smcup](https://pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html) string.
+  - `Display()` calls [`tigetstr()`](https://linux.die.net/man/3/setupterm) to get the (exit ca mode) [rmcup](https://pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html) string.
 
 ### STMClient::init
 
@@ -104,8 +117,8 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - [Register signal handler](#how-to-register-signal-handler) for `SIGWINCH`, `SIGTERM`, `SIGINT`, `SIGHUP`, `SIGPIPE`, `SIGCONT`.
 - Get the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ`.
-- [Initialize `local_framebuffer`](#how-to-initialize-frame-buffer) with the above window size.
-- Create `new_state` frame buffer and set the size to `1*1`.
+- [Initialize `local_framebuffer`](#how-to-initialize-frame-buffer) frame buffer with the above window size.
+- [Initialize `new_state`](#how-to-initialize-frame-buffer) frame buffer with `1*1` size.
 - initialize screen via `display.new_frame()`. Write screen to `STDOUT` via `swrite()`?
 - Create the `Network::UserStream`, create the `Terminal::Complete local_terminal` with window size.?
 - Open the network via `Network::Transport<Network::UserStream, Terminal::Complete>`.?
@@ -123,10 +136,10 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 #### How to initialize frame buffer
 
-- `local_framebuffer` is type of `Terminal::Framebuffer`.
-- `Framebuffer` is a vector of `Row`, the rows number is determined by terminal hight.
+- `new_state` and `local_framebuffer` is type of `Terminal::Framebuffer`.
+- `Framebuffer` has a vector of `Row`, the rows number is determined by terminal hight.
 - Each `Row` in `Framebuffer` is a vector of `Cell`, the `Cell` number is determined by terminal width.
-- The `Cell` is the content with color attribues: `Renditions`.
+- The `Cell` has the content string and content attribues: `Renditions`.
 - `Renditions` determines the forground color, background color, bold, faint, italic, underlined, etc.
 
 #### How to register signal handler
