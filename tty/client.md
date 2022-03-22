@@ -102,10 +102,9 @@ TODO In fragment, if f.contents size is smaller than MTU, how to know the conten
 
 In `client.main()`, `main_init()` is called to init the `mosh` client.
 
-- Register signal handler for `SIGWINCH`, `SIGTERM`, `SIGINT`, `SIGHUP`, `SIGPIPE`, `SIGCONT`.
-  - `sel.add_signal()` disposition the above signals. It blocks the signal outside of `pselect()`. In `pselect()`, the signal mask is replaced by a empty mask set.
-- Get the window size for `STDIN` , via `ioctl()` and `TIOCGWINSZ`.
-- Create `local_framebuffer` and set the `window_size`.?
+- [Register signal handler](#how-to-register-signal-handler) for `SIGWINCH`, `SIGTERM`, `SIGINT`, `SIGHUP`, `SIGPIPE`, `SIGCONT`.
+- Get the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ`.
+- [Initialize `local_framebuffer`](#how-to-initialize-frame-buffer) with the above window size.
 - Create `new_state` frame buffer and set the size to `1*1`.
 - initialize screen via `display.new_frame()`. Write screen to `STDOUT` via `swrite()`?
 - Create the `Network::UserStream`, create the `Terminal::Complete local_terminal` with window size.?
@@ -121,6 +120,24 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - `network->get_current_state().push_back()` adds `Parser::Resize` to `UserStream`.
   - The `Parser::Resize` object is set with the current terminal window size.
 - Set the `verbose` mode via `network->set_verbose()`.
+
+#### How to initialize frame buffer
+
+- `local_framebuffer` is type of `Terminal::Framebuffer`.
+- `Framebuffer` is a vector of `Row`, the rows number is determined by terminal hight.
+- Each `Row` in `Framebuffer` is a vector of `Cell`, the `Cell` number is determined by terminal width.
+- The `Cell` is the content with color attribues: `Renditions`.
+- `Renditions` determines the forground color, background color, bold, faint, italic, underlined, etc.
+
+#### How to register signal handler
+
+- Disposition the previous signals via `sel.add_signal()` .
+- `sel.add_signal()` aka `Select::add_signal()`.
+- `add_signal()` calls `sigprocmask()` system call to add the specified signal mask.
+- `add_signal()` calls `sigaction()` to register signal handler.
+  - Here all Signals is blocked during handler invocation
+- It blocks the signal outside of `pselect()`.
+- In `pselect()`, the signal mask is replaced by a empty mask set.
 
 #### How to process the user input
 
