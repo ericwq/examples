@@ -34,15 +34,30 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 
 ### STMClient::init
 
-- Check whether the client terminal support utf8 locale, via `is_utf8_locale()`, `locale_charset()`, `nl_langinfo()`.
-- Get the `termios` struct for `STDIN`, via `tcgetattr()`.
+- If the client terminal doesn't [support UTF8](#how-to-check-the-utf8-support), exit the application.
+- Get the `termios` struct for `STDIN_FILENO`, via `tcgetattr()`.
 - Set `IUTF8` flag for `termios`.
-- Set the terminal for `STDIN` to raw mode, via `cfmakeraw()`.
-- Set the terminal for `STDOUT` in application cursor key mode. `Display::open()`.
-  - In Application mode, the cursor keys generate escape sequences that the application uses for its own purpose.
-  - Application Cursor Keys mode is a way for the server to change the control sequences sent by the arrow keys. In normal mode, the arrow keys send `ESC [A` through to `ESC [D`. In application mode, they send `ESC OA` through to `ESC OD`.
-- Set terminal window title, via `overlays.set_title_prefix()`. ?
-- Set escape key string, via `overlays.get_notification_engine().set_escape_key_string()`. ?
+- Set the terminal to raw mode, via `cfmakeraw()`.
+- Set the `termios` struct for `STDIN_FILENO`, via `tcsetattr()`.
+- Put terminal in application-cursor-key mode, via `swrite()` write `display.open()` to `STDOUT_FILENO`.
+  - `display.open()` aka `Display::open()`.
+  - `display.open()` returns a control sequence to set the application-cursor-key mode.
+  - Application Cursor Keys mode is a way for the server to change the control sequences sent by the arrow keys. In normal mode, the arrow keys send `ESC [A` through to `ESC [D`.
+  - In application mode, they send `ESC OA` through to `ESC OD`.
+- Set terminal window title, via `overlays.set_title_prefix()`.
+- Set variable, `escape_key`, `escape_pass_key`, `escape_pass_key2`.
+- Set variable, `escape_key_help`.
+- Set string, via `overlays.get_notification_engine().set_escape_key_string()`.
+  - `overlays.get_notification_engine()` returns `NotificationEngine`.
+  - `set_escape_key_string()` aka `NotificationEngine::set_escape_key_string()`.
+  - `set_escape_key_string()` sets the `escape_key_string` field of `NotificationEngine`.
+- Set variable `connecting_notification`.
+
+#### How to check the UTF8 support
+
+- `is_utf8_locale()` checks `locale_charset()` to compare the locale with UTF-8.
+  - `locale_charset()` calls `nl_langinfo()` to return a string with the name of the character encoding.
+- `is_utf8_locale()` return true if the terminal support UTF8, otherwise return false.
 
 #### Transport<MyState, RemoteState>::Transport
 
@@ -50,6 +65,13 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
   - `connection` is the underlying, encrypted network connection.
 
 ### STMClient::main
+
+<!--
+TODO What's the behavior of the serverside.
+TODO what the purpose of `overlay`.
+TODO what the meaning of `display`.
+TODO In fragment, if f.contents size is smaller than MTU, how to know the content size?
+-->
 
 `STMClient::main()` calls [`main_init()`](#stmclientmain_init) to initialize signal handling and structures. In the main loop(while loop), It performs the following steps:
 
@@ -68,8 +90,9 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 #### How to output content
 
 - `output_new_frame()` aka `STMClient::output_new_frame()`.
-- `output_new_frame()` gets the `Framebuffer` from the latest state in `received_states`.
-- `output_new_frame()` calls `overlays.apply()` to apply local overlays.
+- `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
+- `new_state` is of type `Terminal::Framebuffer`.
+- `output_new_frame()` calls `overlays.apply()` to apply `new_state` to local overlays.
 - `output_new_frame()` calls `display.new_frame()` to calculate minimal `diff` from where we are.
 - `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
 - `output_new_frame()` sets `repaint_requested` to true.
@@ -225,13 +248,6 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `PORT_HOP_INTERVAL` is 10s. Which means every 10 seconds a new socket is added to the socket list.
 
 #### How to process the network input
-
-<!--
-TODO What's the behavior of the serverside.
-TODO what the purpose of `overlay`.
-TODO what the meaning of `display`.
-TODO In fragment, if f.contents size is smaller than MTU, how to know the content size?
--->
 
 - `STMClient::main` calls `process_network_input()` if network is ready to read.
 - `process_network_input()` aka `STMClient::process_network_input()`
