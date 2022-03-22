@@ -230,9 +230,9 @@ TODO In fragment, if f.contents size is smaller than MTU, how to know the conten
 #### How to receive network input
 
 - `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
-- `network->recv()` calls [`connection.recv()`](#how-to-read-data-from-socket) to receive the payload string.
+- `network->recv()` calls `connection.recv()` to [receive payload](#how-to-read-data-from-socket) string.
 - `network->recv()` calls `Fragment(const string& x)` to [build a `Fragment` object](#how-to-create-the-frament-from-string) from the payload string.
-- `network->recv()` calls `fragments.add_fragment()` [get the complete packet](#how-to-get-the-complete-packet).
+- `network->recv()` calls `fragments.add_fragment()` to [get the complete packet](#how-to-get-the-complete-packet).
 - `network->recv()` calls `fragments.get_assembly()` to [build the `Instruction` object](#how-to-build-instruction-from-fragments).
 - `network->recv()` calls `sender.process_acknowledgment_through()` to remove states from `send_states`.
   - It removes any `sent_states` whose `num` field is less than `ack_num`.
@@ -244,9 +244,9 @@ TODO In fragment, if f.contents size is smaller than MTU, how to know the conten
   - It makes sure we do have the old state.
 - `network->recv()` throws away the unnecessary state via `process_throwaway_until()`.
   - Any state whose `num` field less than `throwaway_num` is thrown away.
-- `network->recv()` limit on state queue
-  - If `received_states.size() < 1024` and current time is less than `receiver_quench_timer`, drop the received state.
-  - The value of `receiver_quench_timer` is 15000ms.
+- `network->recv()` limits the `received_states` queue size via drop the received state:
+  - If `received_states.size() < 1024` and current time is less than `receiver_quench_timer`.
+  - The value of `receiver_quench_timer` is `now` plus 15000ms.
 - `network->recv()` applies `diff` to reference state, if `diff` is not empty.
   - It creates a new state, which applies the `diff` to the reference state.
 - `network->recv()` inserts new state if out-of-order state is received, `network->recv()` returns directly.
