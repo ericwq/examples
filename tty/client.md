@@ -24,12 +24,37 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
   }
 ```
 
+- [STMClient constructor](#stmclient-constructor)
+- [STMClient::init](#stmclientinit)
+- [STMClient::main](#stmclientmain)
+
+<!--
+TODO What's the behavior of the serverside.
+TODO what the purpose of `overlay`.
+TODO Terminal::Complete detail.
+-->
+
 ### STMClient constructor
 
-- Set the `ip`,`port`,`key`,`predict_mode`,`verbose` parameter. Here, `network` is `NULL`.
-- `Overlay::OverlayManager overlays` is initialized in construction function.
-  - `overlays` contains `NotificationEngine`, `PredictionEngine`, `TitleEngine`. The design of these engine is unclear.
-- [`Terminal::Display`](#terminaldisplay) is initialized in construction function.
+- `STMClient()` is called withe following parameters:`ip`,`port`,`key`,`predict_mode`,`verbose` parameter.
+- `STMClient()` saves `key`, `ip`, `port` parameters as field member.
+- `STMClient()` initializes `escape_key`, `escape_pass_key`, `escape_pass_key2`,
+  - with `0x1E`, `^`, `^` corresponding value.
+- `STMClient()` initializes `escape_requires_lf` with false value.
+- `STMClient()` initializes empty `termios` structs: `raw_termios`, `saved_termios`.
+- `STMClient()` initializes `new_state` frame buffer with 1\*1 size.
+- `STMClient()` initializes `local_framebuffer` frame buffer with 1\*1 size.
+- `STMClient()` initializes `overlay`, which is type of [`Overlay::OverlayManager`](#overlayoverlaymanager).
+- `STMClient()` initializes a NULL `network`.
+- `STMClient()` initializes `display`, which is type of [`Terminal::Display`](#terminaldisplay).
+- `STMClient()` initializes `repaint_requested`, `lf_entered`, `quit_sequence_started`, `clean_shutdown` with false value.
+
+#### Overlay::OverlayManager
+
+- `OverlayManager` has a `NotificationEngine`, which performs the notification work.
+- `OverlayManager` has a `PredictionEngine`, which performs the prediction work.
+- `OverlayManager` has a `TitleEngine`, which performs the title work.
+- The default constructor initializes a `OverlayManager` without any parameters.
 
 #### Terminal::Display
 
@@ -190,12 +215,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 #### How to calculate frame buffer difference
 
-<!--
-TODO What's the behavior of the serverside.
-TODO what the purpose of `overlay`.
-TODO STMClient::main_init calls display.new_frame() detail.
-TODO Terminal::Complete detail.
--->
+- TODO STMClient::main_init calls display.new_frame() detail.
 
 #### How to initialize frame buffer
 
