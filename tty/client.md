@@ -87,6 +87,12 @@ TODO Terminal::Complete detail.
   - `set_escape_key_string()` sets the `escape_key_string` field in `NotificationEngine` object.
 - Set variable `connecting_notification`.
 
+#### How to check the UTF8 support
+
+- `is_utf8_locale()` checks `locale_charset()` to compare the locale with UTF-8.
+  - `locale_charset()` calls `nl_langinfo()` to return a string with the name of the character encoding.
+- `is_utf8_locale()` return true if the terminal support UTF8, otherwise return false.
+
 #### The application-cursor-key mode
 
 - `display.open()` aka `Display::open()`.
@@ -94,12 +100,6 @@ TODO Terminal::Complete detail.
 - Application Cursor Keys mode is a way for the server to change the control sequences sent by the arrow keys.
 - In normal mode, the arrow keys send `ESC [A` through to `ESC [D`.
 - In application mode, they send `ESC OA` through to `ESC OD`.
-
-#### How to check the UTF8 support
-
-- `is_utf8_locale()` checks `locale_charset()` to compare the locale with UTF-8.
-  - `locale_charset()` calls `nl_langinfo()` to return a string with the name of the character encoding.
-- `is_utf8_locale()` return true if the terminal support UTF8, otherwise return false.
 
 ### STMClient::main
 
@@ -112,21 +112,10 @@ TODO Terminal::Complete detail.
 - Upon receive signals, the corresponding item in `Select.got_signal` array is set.
 - Upon network sockets is ready to read, process it with [`process_network_input()`](#how-to-process-the-network-input).
 - Upon user keystroke is ready to read, process it with [`process_user_input()`](#how-to-process-the-user-input)
-- Upon receive `SIGWINCH` signal, resize the terminal with `process_resize()`.
+- Upon receive `SIGWINCH` signal, resize the terminal with [`process_resize()`](#how-to-process-resize).
 - Upon receive `SIGCONT` signal, process it with `resume()`.
 - Upon receive `SIGTERM, SIGINT, SIGHUP, SIGPIPE` signals, showdown the process via `network->start_shutdown()`.
 - Perform [`network->tick()`](#how-does-the-network-tick) to synchronizes the data to the server.
-
-#### How to output content
-
-- `output_new_frame()` aka `STMClient::output_new_frame()`.
-- `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
-- `new_state` is of type `Terminal::Framebuffer`.
-- `output_new_frame()` calls `overlays.apply()` to apply `new_state` to local overlays.
-- `output_new_frame()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to calculate minimal `diff` from where we are.
-- `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
-- `output_new_frame()` sets `repaint_requested` to true.
-- `output_new_frame()` sets `local_framebuffer` to the new state.
 
 #### STMClient::main_init
 
@@ -146,6 +135,17 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `main_init()` [tells server the terminal size](#how-to-tell-server-the-terminal-size).
 - `main_init()` sets the `verbose` mode via `network->set_verbose()`.
 - `main_init()` sets the `verbose` mode via `Select::set_verbose()`.
+
+#### How to output content
+
+- `output_new_frame()` aka `STMClient::output_new_frame()`.
+- `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
+- `new_state` is of type `Terminal::Framebuffer`.
+- `output_new_frame()` calls `overlays.apply()` to apply `new_state` to local overlays.
+- `output_new_frame()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to calculate minimal `diff` from where we are.
+- `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
+- `output_new_frame()` sets `repaint_requested` to true.
+- `output_new_frame()` sets `local_framebuffer` to the new state.
 
 #### How to tell server the terminal size
 
@@ -249,6 +249,14 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
   - `network->get_current_state().push_back()` adds `Parser::UserByte` to `UserStream`.
 - The result of `process_user_input()` is that all the user keystrokes are saved in current state.
+
+#### How to process resize
+
+- `process_resize()` gets the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ` flag.
+- `process_resize()` creates `Parser::Resize` with the window size.
+- `process_resize()` pushes the above `Parser::Resize` into `network->get_current_state()`.
+- `process_resize()` calls `overlays.get_prediction_engine().reset()` to tell prediction engine.
+- `process_resize()` returns true.
 
 #### How does the network tick
 
