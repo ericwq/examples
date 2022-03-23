@@ -103,7 +103,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
 - `new_state` is of type `Terminal::Framebuffer`.
 - `output_new_frame()` calls `overlays.apply()` to apply `new_state` to local overlays.
-- `output_new_frame()` calls `display.new_frame()` to calculate minimal `diff` from where we are.
+- `output_new_frame()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to calculate minimal `diff` from where we are.
 - `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
 - `output_new_frame()` sets `repaint_requested` to true.
 - `output_new_frame()` sets `local_framebuffer` to the new state.
@@ -113,35 +113,90 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 <!--
 TODO What's the behavior of the serverside.
 TODO what the purpose of `overlay`.
-TODO what the meaning of `display`.
+TODO display.new_frame() detail.
+TODO Terminal::Complete detail.
 -->
 
 In `client.main()`, `main_init()` is called to init the `mosh` client.
 
-- [Register signal handler](#how-to-register-signal-handler) for `SIGWINCH`, `SIGTERM`, `SIGINT`, `SIGHUP`, `SIGPIPE`, `SIGCONT`.
-- Get the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ`.
-- [Initialize `local_framebuffer`](#how-to-initialize-frame-buffer) frame buffer with the above window size.
-- [Initialize `new_state`](#how-to-initialize-frame-buffer) frame buffer with `1*1` size.
-- initialize screen via `display.new_frame()`. Write screen to `STDOUT` via `swrite()`?
-- Create the `Network::UserStream`, create the `Terminal::Complete local_terminal` with window size.?
-- Open the network via `Network::Transport<Network::UserStream, Terminal::Complete>`.?
-  - In the constructor function (client side), `connection(key_str, ip, port)` is called to create the socket with the server.
-  - In `Connection::Connection()`, the `Addr remote_addr` is created and saved in `Connection.remote_addr`.
-  - In `Connection::Connection()`, the `Connection::Socket` is created and saved in `Connection.socks`.
-  - In `Connection::Connection()`, `Connection::set_MTU()` is called to set the MTU.
-- Set minimal delay on outgoing keystrokes to 1 ms, via `network->set_send_delay()`.
-- Tell server the size of the terminal via `network->get_current_state().push_back()`.
-  - Here `network->get_current_state()` is actually `TransportSender.get_current_state()`.
-  - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
-  - `network->get_current_state().push_back()` adds `Parser::Resize` to `UserStream`.
-  - The `Parser::Resize` object is set with the current terminal window size.
-- Set the `verbose` mode via `network->set_verbose()`.
+- `main_init()` [registers signal handler](#how-to-register-signal-handler) for `SIGWINCH`, `SIGTERM`, `SIGINT`, `SIGHUP`, `SIGPIPE`, `SIGCONT`.
+- `main_init()` gets the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ` flag.
+- `main_init()` [initializes `local_framebuffer`](#how-to-initialize-frame-buffer) frame buffer with the above window size.
+- `main_init()` [initializes `new_state`](#how-to-initialize-frame-buffer) frame buffer with `1*1` size.
+- `main_init()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to get the initial screen.
+- `main_init()` calls `swrite()` to write initial screen to `STDOUT_FILENO`.
+- `main_init()` creates blank [`Network::UserStream`](#networkuserstream).
+- `main_init()` creates `local_terminal` of type [`Terminal::Complete`](#terminalcomplete).
+- `main_init()` creates `network` of type [`Network::Transport<Network::UserStream, Terminal::Complete>`](#networktransportnetworkuserstream-terminalcomplete).
+- `main_init()` calls `network->set_send_delay()` to set minimal delay on outgoing keystrokes to 1 ms.
+  - `set_send_delay()` calls `sender.set_send_delay()` to set the minimal delay.
+- `main_init()` [tells server the terminal size](#how-to-tell-server-the-terminal-size).
+- `main_init()` sets the `verbose` mode via `network->set_verbose()`.
+- `main_init()` sets the `verbose` mode via `Select::set_verbose()`.
+
+#### How to tell server the terminal size
+
+- `main_init()` creates a `Parser::Resize` object and pushes it into `network->get_current_state()`.
+- Here `network->get_current_state()` is actually `TransportSender.get_current_state()`.
+- The return value of `TransportSender.get_current_state()` is a `UserStream` object.
+- `network->get_current_state().push_back()` adds `Parser::Resize` to `UserStream`.
+- The `Parser::Resize` object is initialized with the current terminal window size.
+- The current state will ben send to server later.
+
+#### Network::Transport<Network::UserStream, Terminal::Complete>
+
+- `Network::Transport` is constructed with:
+  - the blank `UserStream`,
+  - local terminal which is type of `Terminal::Complete`,
+  - `key`, `ip`, `port` as parameters.
+- `Network::Transport` has a `Connection`, which represents the underlying, encrypted network connection.
+- `Network::Transport` has a `TransportSender<Network::UserStream>`, which represents the sender.
+- `Network::Transport` has a `list<TimestampedState<Terminal::Complete>>`, which represents receiver.
+- In the constructor of `Network::Transport`,
+  - `connection(key_str, ip, port)` is called to create the connection with server.
+  - `connection()` is the constructor of `Network::Connection`
+  - `connection()` calls `setup()` to set the `last_port_choice` to current time.
+  - `connection()` initializes a empty deque of `Socket`: `socks`.
+  - `connection()` initializes `remote_addr` with `ip`, `port` as parameters,
+    - `remote_addr` represents server address.
+  - `connection()` initializes `session` with `key` as parameter,
+    - `session` object is used to encrypt/decrypt message.
+  - `connection()` creates a `Socket` and pushes it into `socks` deque.
+  - `connection()` calls `set_MTU()` to set the MTU.
+  - `connection()` sets `has_remote_addr` to true.
+- In the constructor of `Network::Transport`,
+  - `sender(connection, initial_state)` is called to initialize the sender.
+  - `sender()` is the constructor of `TransportSender<Network::UserStream>`.
+  - `sender()` initializes `current_state` with the `initial_state` as parameter.
+  - `sender()` initializes `connection` pointer with the `connection` as parameter.
+  - `sender()` initializes `sent_states` list with the `initial_state` as the first state.
+- In the constructor of `Network::Transport`,
+  - `received_states` is a list type of `TimestampedState<Terminal::Complete>`.
+  - `received_states` is initialized with the `local_terminal` as parameter.
+  - `received_states` adds the `local_terminal` to its list.
+- `Network::Transport()` set `receiver_quench_timer` to zero.
+- `Network::Transport()` set `last_receiver_state` to be `local_terminal`.
+- `Network::Transport()` creates `fragments`, which is type of `FragmentAssembly`.
+
+#### Terminal::Complete
+
+- `Terminal::Complete` represents the complete terminal, a `UTF8Parser` feeding `Actions` to an `Emulator`.
+
+#### Network::UserStream
+
+- `Network::UserStream` has a deque of type `UserEvent`.
+- `UserEvent` can store `Parser::UserByte` or `Parser::Resize` object.
+- `Parser::UserByte` is used to store user keystroke.
+- `Parser::Resize` is used to store resize event.
+- The default constructor of `Network::UserStream` builds a empty `Network::UserStream` object.
+
+#### How to calculate frame buffer difference
 
 #### How to initialize frame buffer
 
 - `new_state` and `local_framebuffer` is type of `Terminal::Framebuffer`.
 - `Framebuffer` has a vector of `Row`, the rows number is determined by terminal hight.
-- Each `Row` in `Framebuffer` is a vector of `Cell`, the `Cell` number is determined by terminal width.
+- Each `Row` in `Framebuffer` has a vector of `Cell`, the `Cell` number is determined by terminal width.
 - The `Cell` has the content string and content attribues: `Renditions`.
 - `Renditions` determines the forground color, background color, bold, faint, italic, underlined, etc.
 
@@ -256,7 +311,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - The fragments is saved in `Fragment` vector.
 - `send_in_fragments()` calls [`connection->send()`](#how-to-send-a-packet) to send each `Fragment` to the server.
 
-### How to send a packet?
+#### How to send a packet?
 
 - `connection->send()` aka `Connection::send()`.
 - `connection->send()` calls `new_packet()` to create a `Packet`.
