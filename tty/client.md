@@ -31,7 +31,6 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 <!--
 TODO What's the behavior of the serverside.
 TODO what the purpose of `overlay`.
-TODO Terminal::Complete detail.
 -->
 
 ### STMClient constructor
@@ -271,18 +270,32 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `sender.tick()` calls `current_state.diff_from()` to [calculate diff](#how-to-calculate-the-diff-client-side).
 - `sender.tick()` calls `attempt_prospective_resend_optimization()` to optimize diff.
 - If `diff` is empty and if it's greater than the `next_ack_time`.
-  - `sender.tick()` calls `send_empty_ack()` to send ack.
-  - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
-  - `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
+  - `sender.tick()` calls [`send_empty_ack()`](#how-to-send-empty-ack) to send ack.
 - If `diff` is not empty and if it's greater than `next_send_time` or `next_ack_time`.
-  - `sender.tick()` calls `send_to_receiver()` to send diffs.
-  - `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
-  - `send_to_receiver()` calls `add_sent_state()` to send a new state.
-  - `add_sent_state()` adds the new state to `sent_states` and limits the size of `send_states` list.
-  - Or `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
-  - Note `sent_states` is type of list `TimestampedState`, while `current_state` is type of `MyState`.
-  - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
-  - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
+  - `sender.tick()` calls [`send_to_receiver()`](#how-to-send-to-receiver) to send diffs.
+
+#### How to send empty ack
+
+- `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
+- `send_empty_ack()` gets the last state number via `sent_states.back()` and increases one.
+- `send_empty_ack()` calls `add_sent_state()` to push `current_state` into `sent_states`,
+  - with the new state number and current time as parameters.
+  - limit the size of `sent_states` below 32.
+- `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send the new state
+  - with empty string as `diff` parameter.
+
+#### How to send to receiver
+
+- `send_to_receiver()` aka `TransportSender<MyState>::send_to_receiver()`.
+- If `current_state` number is equal to `sent_states.back()` number,
+- `send_to_receiver()` refreshes the `timestamp` field of the latest state in `sent_states`.
+- If `current_state` number is not equal to `sent_states.back()` number, increase the state number.
+- `send_to_receiver()` calls `add_sent_state()` to push `current_state` into `sent_states`,
+  - with the new state number and current time as parameters.
+  - limit the size of `sent_states` below 32.
+- Note `sent_states` is type of list `TimestampedState`, while `current_state` is type of `MyState`.
+- `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
+- `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
 #### How to calculate the diff (client side)
 
@@ -396,7 +409,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - The value of `receiver_quench_timer` is `now` plus 15000ms.
 - `network->recv()` applies `diff` to reference state, if `diff` is not empty.
   - It creates a new state, which applies the `diff` to the reference state.
-- `network->recv()` inserts new state if out-of-order state is received, `network->recv()` returns directly.
+- If out-of-order state is received, `network->recv()` inserts new state and returns directly,
 - `network->recv()` calls `received_states.push_back()` to store the new state.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
   - It means the `sender` set `ack_num` got from the `received_states` number.
