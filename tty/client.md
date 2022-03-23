@@ -52,7 +52,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - Set `IUTF8` flag for `termios`.
 - Set the terminal to raw mode, via `cfmakeraw()`.
 - Set the `termios` struct for `STDIN_FILENO`, via `tcsetattr()`.
-- Put terminal in application-cursor-key mode, via `swrite()` write [`display.open()`](#the-application-cursor-key-mode) to `STDOUT_FILENO`.
+- Put terminal in [application-cursor-key mode](#the-application-cursor-key-mode), via `swrite()` write `display.open()` to `STDOUT_FILENO`.
 - Set terminal window title, via `overlays.set_title_prefix()`.
 - Set variable, `escape_key`, `escape_pass_key`, `escape_pass_key2`.
 - Set variable, `escape_key_help`.
@@ -75,11 +75,6 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - `is_utf8_locale()` checks `locale_charset()` to compare the locale with UTF-8.
   - `locale_charset()` calls `nl_langinfo()` to return a string with the name of the character encoding.
 - `is_utf8_locale()` return true if the terminal support UTF8, otherwise return false.
-
-#### Transport<MyState, RemoteState>::Transport
-
-- Initialize the `connection`, initialize the sender with `connection` and `initial_state`.
-  - `connection` is the underlying, encrypted network connection.
 
 ### STMClient::main
 
@@ -109,13 +104,6 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - `output_new_frame()` sets `local_framebuffer` to the new state.
 
 #### STMClient::main_init
-
-<!--
-TODO What's the behavior of the serverside.
-TODO what the purpose of `overlay`.
-TODO display.new_frame() detail.
-TODO Terminal::Complete detail.
--->
 
 In `client.main()`, `main_init()` is called to init the `mosh` client.
 
@@ -152,24 +140,8 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `Network::Transport` has a `Connection`, which represents the underlying, encrypted network connection.
 - `Network::Transport` has a `TransportSender<Network::UserStream>`, which represents the sender.
 - `Network::Transport` has a `list<TimestampedState<Terminal::Complete>>`, which represents receiver.
-- In the constructor of `Network::Transport`,
-  - `connection(key_str, ip, port)` is called to create the connection with server.
-  - `connection()` is the constructor of `Network::Connection`
-  - `connection()` calls `setup()` to set the `last_port_choice` to current time.
-  - `connection()` initializes a empty deque of `Socket`: `socks`.
-  - `connection()` initializes `remote_addr` with `ip`, `port` as parameters,
-    - `remote_addr` represents server address.
-  - `connection()` initializes `session` with `key` as parameter,
-    - `session` object is used to encrypt/decrypt message.
-  - `connection()` creates a `Socket` and pushes it into `socks` deque.
-  - `connection()` calls `set_MTU()` to set the MTU.
-  - `connection()` sets `has_remote_addr` to true.
-- In the constructor of `Network::Transport`,
-  - `sender(connection, initial_state)` is called to initialize the sender.
-  - `sender()` is the constructor of `TransportSender<Network::UserStream>`.
-  - `sender()` initializes `current_state` with the `initial_state` as parameter.
-  - `sender()` initializes `connection` pointer with the `connection` as parameter.
-  - `sender()` initializes `sent_states` list with the `initial_state` as the first state.
+- `Network::Transport` calls `connection(key_str, ip, port)` to [initialize the connection](#how-to-initialize-connection).
+- `Network::Transport` calls `sender(connection, initial_state)` to [initialize sender](#how-to-initialize-sender).
 - In the constructor of `Network::Transport`,
   - `received_states` is a list type of `TimestampedState<Terminal::Complete>`.
   - `received_states` is initialized with the `local_terminal` as parameter.
@@ -178,9 +150,35 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `Network::Transport()` set `last_receiver_state` to be `local_terminal`.
 - `Network::Transport()` creates `fragments`, which is type of `FragmentAssembly`.
 
+#### How to initialize sender
+
+- `sender(connection, initial_state)` is called to initialize the sender.
+- `sender()` is the constructor of `TransportSender<Network::UserStream>`.
+- `sender()` initializes `current_state` with the `initial_state` as parameter.
+- `sender()` initializes `connection` pointer with the `connection` as parameter.
+- `sender()` initializes `sent_states` list with the `initial_state` as the first state.
+
+#### How to initialize connection
+
+- `connection(key_str, ip, port)` is called to create the connection with server.
+- `connection()` is the constructor of `Network::Connection`
+- `connection()` calls `setup()` to set the `last_port_choice` to current time.
+- `connection()` initializes a empty deque of `Socket`: `socks`.
+- `connection()` initializes `remote_addr` with `ip`, `port` as parameters,
+  - `remote_addr` represents server address.
+- `connection()` initializes `session` with `key` as parameter,
+  - `session` object is used to encrypt/decrypt message.
+- `connection()` creates a `Socket` and pushes it into `socks` deque.
+- `connection()` calls `set_MTU()` to set the MTU.
+- `connection()` sets `has_remote_addr` to true.
+
 #### Terminal::Complete
 
 - `Terminal::Complete` represents the complete terminal, a `UTF8Parser` feeding `Actions` to an `Emulator`.
+- `Complete()` creates a `Parser::UTF8Parser` object.
+- `Complete()` creates a `Terminal::Emulator` object with `width` and `hight` as parameters.
+- `Complete()` initializes a [`Terminal::Display`](#terminaldisplay) object with `false` as parameter.
+- `Complete()` creates a `Parser::Actions` object.
 
 #### Network::UserStream
 
@@ -191,6 +189,13 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - The default constructor of `Network::UserStream` builds a empty `Network::UserStream` object.
 
 #### How to calculate frame buffer difference
+
+<!--
+TODO What's the behavior of the serverside.
+TODO what the purpose of `overlay`.
+TODO STMClient::main_init calls display.new_frame() detail.
+TODO Terminal::Complete detail.
+-->
 
 #### How to initialize frame buffer
 
