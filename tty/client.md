@@ -28,10 +28,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - [STMClient::init](#stmclientinit)
 - [STMClient::main](#stmclientmain)
 
-<!--
-TODO What's the behavior of the serverside.
-TODO what the purpose of `overlay`.
--->
+<!-- TODO what the purpose of `overlay`. -->
 
 ### STMClient constructor
 
@@ -214,15 +211,34 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 #### How to calculate frame buffer difference
 
-- TODO STMClient::main_init calls display.new_frame() detail.
+- `new_frame()` aka `Display::new_frame()`
+- `new_frame()` receives two `Framebuffer`: `last` and `f`, and builds the difference for output to terminal display.
+- `new_frame()` initializes a `FrameState`: `frame`, with the old `Framebuffer` `last`.
+- `new_frame()` checks if the bell ring happened: if true, append escape sequence to `frame`.
+- `new_frame()` checks if icon name or window title changed: if true, append escape sequence to `frame`.
+- `new_frame()` checks if reverse video state changed: if true, append escape sequence `frame`.
+- `new_frame()` checks if window size changed: if true, append escape sequence to `frame`.
+- `new_frame()` checks is cursor visibility initialized: if false, append escape sequence to `frame`.
+- `new_frame()` extends rows if we've gotten a resize and new is wider than old.
+- `new_frame()` adds rows if we've gotten a resize and new is taller than old.
+- `new_frame()` checks if display moved up by a certain number of lines
+- `new_frame()` updates the display, row by row, via calling `put_row()` for each row. TODO detail of `put_row()`.
+- `new_frame()` checks if cursor location changed, append escape sequence to `frame`.
+- `new_frame()` checks if cursor visibility changed, append escape sequence to `frame`.
+- `new_frame()` checks if renditions changed: if true, append escape sequence to `frame`.
+- `new_frame()` checks if bracketed paste mode changed: if true, append escape sequence to `frame`.
+- `new_frame()` checks if mouse reporting mode changed: if true, append escape sequence to `frame`.
+- `new_frame()` checks if mouse focus mode changed: if true, append escape sequence to `frame`.
+- `new_frame()` checks if mouse encoding mode changed: if true, append escape sequence to `frame`.
+- `new_frame()` returns the final `frame` escape sequence string.
 
 #### How to initialize frame buffer
 
 - `new_state` and `local_framebuffer` is type of `Terminal::Framebuffer`.
 - `Framebuffer` has a vector of `Row`, the rows number is determined by terminal hight.
 - Each `Row` in `Framebuffer` has a vector of `Cell`, the `Cell` number is determined by terminal width.
-- The `Cell` has the content string and content attribues: `Renditions`.
-- `Renditions` determines the forground color, background color, bold, faint, italic, underlined, etc.
+- The `Cell` has the content string and content attributes: `Renditions`.
+- `Renditions` determines the foreground color, background color, bold, faint, italic, underlined, etc.
 
 #### How to register signal handler
 
