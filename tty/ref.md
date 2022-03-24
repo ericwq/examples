@@ -88,4 +88,49 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 % bear -- make
 ```
 
-now you can check the source code of `mosh` via [nvide](https://github.com/ericwq/nvide).
+## reference doc
+
+How the terminal works? Who is responsible for terminal rendering? Does GPU-rendering in terminal matter?
+
+- [Documentation for State Synchronization Protocol](https://github.com/mobile-shell/mosh/issues/1087)
+- [Text-Terminal-HOWTO](https://tldp.org/HOWTO/Text-Terminal-HOWTO.html)
+- [Linux terminals, tty, pty and shell](https://dev.to/napicella/linux-terminals-tty-pty-and-shell-192e)
+- [Linux terminals, tty, pty and shell - part 2](https://dev.to/napicella/linux-terminals-tty-pty-and-shell-part-2-2cb2)
+- [How does a Linux terminal work?](https://unix.stackexchange.com/questions/79334/how-does-a-linux-terminal-work)
+- [How Zutty works: Rendering a terminal with an OpenGL Compute Shader](https://tomscii.sig7.se/2020/11/How-Zutty-works)
+- [A totally biased comparison of Zutty (to some better-known X terminal emulators)](https://tomscii.sig7.se/2020/12/A-totally-biased-comparison-of-Zutty)
+- [A look at terminal emulators, part 1](https://lwn.net/Articles/749992/)
+- [A look at terminal emulators, part 2](https://lwn.net/Articles/751763/)
+- [High performant 2D renderer in a terminal](https://blog.ghaiklor.com/2020/07/27/high-performant-2d-renderer-in-a-terminal/)
+- [The TTY demystified](http://www.linusakesson.net/programming/tty/)
+- [Control sequence](https://ttssh2.osdn.jp/manual/4/en/about/ctrlseq.html#ESC)
+- [The ASCII Character Set](https://www.w3schools.com/charsets/ref_html_ascii.asp#:~:text=The%20ASCII%20Character%20Set&text=ASCII%20is%20a%207%2Dbit,are%20all%20based%20on%20ASCII.)
+
+### C++ reference
+
+- [c++ reference](https://www.cplusplus.com/reference/)
+- [c++ grammar](https://www.runoob.com/cplusplus/cpp-modifier-types.html)
+
+### typing
+
+- [Typing with pleasure](https://pavelfatin.com/typing-with-pleasure/)
+- [Measured: Typing latency of Zutty (compared to others)](https://tomscii.sig7.se/2021/01/Typing-latency-of-Zutty)
+
+### clangd format
+
+- [Clang-Format Style Options](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
+- [clangd format generator](https://zed0.co.uk/clang-format-configurator/)
+
+### reference links
+
+- [Using (neo)vim for C++ development](https://idie.ru/posts/vim-modern-cpp)
+- [Getting Started with Mosh (Mobile Shell)](https://bitlaunch.io/blog/getting-started-with-mosh/)
+- [example language server](https://github.com/ChrisAmelia/dotfiles/blob/master/nvim/lua/lsp.lua#L108-L120)
+- [nvim-lua/kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim)
+- [Add, Delete And Grant Sudo Privileges To Users In Alpine Linux](https://ostechnix.com/add-delete-and-grant-sudo-privileges-to-users-in-alpine-linux/)
+- [Why is GO111MODULE everywhere, and everything about Go Modules](https://maelvls.dev/go111module-everywhere/#go111module-with-go-117)
+- [Understanding go.mod and go.sum](https://faun.pub/understanding-go-mod-and-go-sum-5fd7ec9bcc34)
+- [spellsitter.nvim](https://github.com/lewis6991/spellsitter.nvim)
+- [Neovim Tips for a Better Coding Experience](https://alpha2phi.medium.com/neovim-tips-for-a-better-coding-experience-3d0f782f034e)
+- [Neovim - Treesitter Syntax Highlighting](https://www.youtube.com/watch?v=hkxPa5w3bZ0)
+  now you can check the source code of `mosh` via [nvide](https://github.com/ericwq/nvide).
