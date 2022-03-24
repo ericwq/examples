@@ -255,7 +255,9 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
 - `process_user_input()` aka `STMClient::process_user_input()`.
 - `process_user_input()` calls `read()` system call to read the user keystrokes.
-- `process_user_input()` check the input character,
+- `process_user_input()` calls `overlays.get_prediction_engine().set_local_frame_sent()` to save the last `send_states` number.
+- `process_user_input()` check each input character:
+- `process_user_input()` calls `overlays.get_prediction_engine().new_user_byte()` to TODO.
 - If it get the `LF`, `CR` character, set `repaint_requested` to be true.
 - For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
   - `network->get_current_state()` is actually `TransportSender.get_current_state()`.
