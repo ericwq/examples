@@ -1,0 +1,112 @@
+# Mosh server coding analysis
+
+## mosh-server.cc
+
+`mosh-server` command parameters.
+
+```sh
+Usage: mosh-server new [-s] [-v] [-i LOCALADDR] [-p PORT[:PORT2]] [-c COLORS] [-l NAME=VALUE] [-- COMMAND *]
+Usage: mosh-server --help
+Usage: mosh-server --version
+```
+
+In the `main` function: `run_server` is the core to start `mosh` server.
+
+- `main()` calls `Crypto::disable_dumping_core()` to make sure we don't dump core.
+- `main()` parses `new` command-line syntax.
+- `main()` checks port range.
+- `main()` gets shell name and prepares for shell command arguments.
+- `main()` makes sure UTF8 locale is set.
+- `main()` calls [`run_server()`](#run_server) with the ip, port and shell path, shell arguments,(etc.) as parameters.
+
+### run_server
+
+- `run_server()` gets network idle timeout.
+- `run_server()` gets network signaled idle timeout.
+- `run_server()` gets initial window size. They will be overwritten by client on first connection.
+- `run_server()` calls [`Terminal::Complete()`](client.md#terminalcomplete) to open parser and terminal.
+- `run_server()` creates blank [`Network::UserStream`](client.md#networkuserstream).
+- `run_server()` creates ` network`, which is type of [`ServerConnection`](#serverconnection).
+- `run_server()` sets the `verbose` mode via `network->set_verbose()`.
+- `run_server()` sets the `verbose` mode via `Select::set_verbose()`.
+- `run_server()` calls `network->port()` to get the port string representation.
+  - `network->port()` calls `connection.port()` to get the port.
+  - `connection.port()` calls `getsockname()` to get the `sockaddr` of server socket.
+  - `connection.port()` calls `getnameinfo()` to get the port string representation.
+- `run_server()` calls `network->get_key()` to get the session key string representation.
+  - `network->get_key()` calls `connection.get_key()` to get the session key.
+  - `connection.get_key()` calls `key.printable_key()` instead.
+  - `key.printable_key()` aka `Base64Key::printable_key()`.
+  - `key.printable_key()` calls `base64_encode()` to show the `key` base64 representation.
+- `run_server()` prints port and session key to the standard output. The output starts with "MOSH CONNECT ".
+- `run_server()` ignores signal `SIGHUP`, `SIGPIPE`.
+- `run_server()` calls `fork()` to detach from terminal.
+  - Parent process prints the license information and terminates.
+  - Child process continues.
+- `run_server()` redirects `STDIN_FILENO`, `STDOUT_FILENO`, `STDERR_FILENO` to "/dev/null" for non-verbose mode.
+- `run_server()` calls [`forkpty()`](#forkpty) to create a new process operating in a pseudo terminal.
+
+#### forkpty
+
+- For child process:
+  - Re-enable signals `SIGHUP`, `SIGPIPE` with default value.
+  - Get the `termios` struct for `STDIN_FILENO`, via `tcgetattr()`.
+  - Set `IUTF8` flag for `termios`.
+  - Set the `termios` struct for `STDIN_FILENO`, via `tcsetattr()`.
+  - TODO
+- For parent process:
+
+### `ServerConnection`
+
+- `ServerConnection` aka `Network::Transport<Terminal::Complete, Network::UserStream>`.
+- `Network::Transport` is constructed with:
+  - the `terminal` which is type of `Terminal::Complete`,
+  - the `blank` which is type of `UserStream`,
+  - `ip`, `port` as parameters.
+- `Network::Transport` has a `Connection`, which represents the underlying, encrypted network connection.
+- `Network::Transport` has a `TransportSender<Terminal::Complete>`, which represents the sender.
+- `Network::Transport` has a `list<TimestampedState<Network::UserStream>>`, which represents receiver.
+- `Network::Transport` calls `connection(desired_ip, desired_port)` to [initialize the connection](#how-to-initialize-connection).
+- `Network::Transport` calls `sender(connection, initial_state)` to [initialize sender](#how-to-initialize-sender).
+- In the constructor of `Network::Transport`,
+  - `received_states` is a list type of `TimestampedState<Network::UserStream>`.
+  - `received_states` is initialized with the `blank`as parameter.
+  - `received_states` adds the `blank` to its list.
+- `Network::Transport()` set `receiver_quench_timer` to zero.
+- `Network::Transport()` set `last_receiver_state` to be `terminal`.
+- `Network::Transport()` creates `fragments`, which is type of `FragmentAssembly`.
+
+#### How to initialize connection
+
+- `connection(desired_ip, desired_port)` is called to create the connection with server.
+- `connection()` is the constructor of `Network::Connection`
+- `connection()` initializes a empty deque of `Socket`: `socks`.
+- `connection()` initializes `has_remote_addr` to true.
+- `connection()` initializes the `key`, which is type of `Base64Key`
+  - `Base64Key` reads 16 bytes from `/dev/urandom` as the `key`.
+- `connection()` initializes `session` with `key` as parameter,
+  - `session` object is used to encrypt/decrypt message.
+- `connection()` calls `setup()` to set the `last_port_choice` to current time.
+- `connection()` calls `parse_portrange()` to parse port range from `desired_port` parameter.
+- `connection()` calls [`try_bind()`](#try_bind) to bind the port to network interface.
+  - If `desired_ip` is given, use `desired_ip` as parameter to call `try_bind()`.
+  - `try_bind()` is called with port range parameters.
+- `connection()` returns if `try_bind()` returns true.
+
+#### How to initialize sender
+
+- `sender(connection, initial_state)` is called to initialize the sender.
+- `sender()` is the constructor of `TransportSender<Terminal::Complete>`.
+- `sender()` initializes `connection` pointer with the `connection` as parameter.
+- `sender()` initializes `current_state` with the `initial_state` as parameter.
+- `sender()` initializes `sent_states` list with the `initial_state` as the first state.
+
+#### try_bind
+
+- `try_bind()` initializes a `AddrInfo` object with `desired_ip` as parameter.
+  - `AddrInfo` calls `getaddrinfo()` to get the `addrinfo` object.
+- `try_bind()` creates a `Socket` and pushes it into `socks` deque.
+  - `Socket` uses `setsockopt()` to set socket options: `IP_MTU_DISCOVER`, `IP_TOS`, `IP_RECVTOS`.
+- `try_bind()` searches the port range, calls `bind()` bind the server socket to that port.
+  - If `bind()` returns successfully. `try_bind()` calls `set_MTU()` to set the MTU and return true.
+  - If `bind()` fails, `try_bind()` throw exceptions and return false.
