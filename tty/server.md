@@ -29,15 +29,8 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `run_server()` creates ` network`, which is type of [`ServerConnection`](#serverconnection).
 - `run_server()` sets the `verbose` mode via `network->set_verbose()`.
 - `run_server()` sets the `verbose` mode via `Select::set_verbose()`.
-- `run_server()` calls `network->port()` to get the port string representation.
-  - `network->port()` calls `connection.port()` to get the port.
-  - `connection.port()` calls `getsockname()` to get the `sockaddr` of server socket.
-  - `connection.port()` calls `getnameinfo()` to get the port string representation.
-- `run_server()` calls `network->get_key()` to get the session key string representation.
-  - `network->get_key()` calls `connection.get_key()` to get the session key.
-  - `connection.get_key()` calls `key.printable_key()` instead.
-  - `key.printable_key()` aka `Base64Key::printable_key()`.
-  - `key.printable_key()` calls `base64_encode()` to show the `key` base64 representation.
+- `run_server()` calls `network->port()` to [get the port string](#how-to-get-port-string) representation.
+- `run_server()` calls `network->get_key()` to [get the session key string](#how-to-get-session-key-string) representation.
 - `run_server()` prints port and session key to the standard output. The output starts with "MOSH CONNECT ".
 - `run_server()` ignores signal `SIGHUP`, `SIGPIPE`.
 - `run_server()` calls `fork()` to detach from terminal.
@@ -53,10 +46,17 @@ In the `main` function: `run_server` is the core to start `mosh` server.
   - Get the `termios` struct for `STDIN_FILENO`, via `tcgetattr()`.
   - Set `IUTF8` flag for `termios`.
   - Set the `termios` struct for `STDIN_FILENO`, via `tcsetattr()`.
+  - Set "TERM" envrionment variable to be "xterm" or "xterm-256color" based on "-c color" option.
+  - Set "NCURSES_NO_UTF8_ACS" envrionment variable to ask ncurses to send UTF-8 instead of ISO 2022 for line-drawing chars.
+  - Clear "STY" envrionment variable so GNU screen regards us as top level.
+  - Call `chdir_homedir()` to change to the home directory.
+    - Call `getenv()` or `getpwuid(getuid())` to get the `home` path.
+    - Call `chdir()` to change to the `home` path.
+    - Call `setenv()` to set the "PWD" envrionment variable.
   - TODO
 - For parent process:
 
-### `ServerConnection`
+#### `ServerConnection`
 
 - `ServerConnection` aka `Network::Transport<Terminal::Complete, Network::UserStream>`.
 - `Network::Transport` is constructed with:
@@ -110,3 +110,16 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `try_bind()` searches the port range, calls `bind()` bind the server socket to that port.
   - If `bind()` returns successfully. `try_bind()` calls `set_MTU()` to set the MTU and return true.
   - If `bind()` fails, `try_bind()` throw exceptions and return false.
+
+#### How to get port string
+
+- `network->port()` calls `connection.port()` to get the port.
+- `connection.port()` calls `getsockname()` to get the `sockaddr` of server socket.
+- `connection.port()` calls `getnameinfo()` to get the port string representation.
+
+#### How to get session key string
+
+- `network->get_key()` calls `connection.get_key()` to get the session key.
+- `connection.get_key()` calls `key.printable_key()` instead.
+- `key.printable_key()` aka `Base64Key::printable_key()`.
+- `key.printable_key()` calls `base64_encode()` to show the `key` base64 representation.
