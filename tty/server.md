@@ -31,39 +31,40 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `run_server()` sets the `verbose` mode via `Select::set_verbose()`.
 - `run_server()` calls `network->port()` to [get the port string](#how-to-get-port-string) representation.
 - `run_server()` calls `network->get_key()` to [get the session key string](#how-to-get-session-key-string) representation.
-- `run_server()` prints port and session key to the standard output. The output starts with "MOSH CONNECT ".
+- `run_server()` prints port and session key to the standard output. The output starts with `"MOSH CONNECT "`.
 - `run_server()` ignores signal `SIGHUP`, `SIGPIPE`.
 - `run_server()` calls `fork()` to detach from terminal.
   - Parent process prints the license information and terminates.
   - Child process continues.
-- `run_server()` redirects `STDIN_FILENO`, `STDOUT_FILENO`, `STDERR_FILENO` to "/dev/null" for non-verbose mode.
+- `run_server()` redirects `STDIN_FILENO`, `STDOUT_FILENO`, `STDERR_FILENO` to `"/dev/null"` for non-verbose mode.
 - `run_server()` calls [`forkpty()`](#forkpty) to create a new process operating in a pseudo terminal.
 
 #### forkpty
 
-- For child process:
+- The child process, which will run a shell process:
   - Re-enable signals `SIGHUP`, `SIGPIPE` with default value.
   - Close server-related socket file descriptors, via calling `delete`.
   - Set terminal [UTF8 support](#how-to-set-the-terminal-utf8-support).
-  - Set "TERM" envrionment variable to be "xterm" or "xterm-256color" based on "-c color" option.
-  - Set "NCURSES_NO_UTF8_ACS" envrionment variable
+  - Set `"TERM"` envrionment variable to be `"xterm"` or `"xterm-256color"` based on `"-c color"` option.
+  - Set `"NCURSES_NO_UTF8_ACS"` envrionment variable
     - to ask ncurses to send UTF-8 instead of ISO 2022 for line-drawing chars.
-  - Clear "STY" envrionment variable so GNU screen regards us as top level.
+  - Clear `"STY"` envrionment variable so GNU screen regards us as top level.
   - Change to the home directory, via calling [`chdir_homedir()`](#chdir_homedir):
   - If `.hushlogin` file don't exist and `with_motd` is true,
-    - print the motd from "/run/motd.dynamic",
-    - or print the motd from "/var/run/motd.dynamic" and "/etc/motd".
+    - print the motd from `"/run/motd.dynamic"`,
+    - or print the motd from `"/var/run/motd.dynamic"` and `"/etc/motd"`.
   - Print warning message if there is unattached mosh session, via calling [`warn_unattached()`](#warn_unattached).
+    - See the following parent process to understand mosh session.
   - Wait for parent to release us, via calling `fgets()` for `stdin`.
   - Enable core dump, via calling `Crypto::reenable_dumping_core()`.
   - Execute the shell command with arguments, via calling `execvp()`.
   - Terminate the child process, via calling `exit()`.
-- For parent process:
-  - Add utmp record via calling [`utempter_add_record()`](http://manpages.ubuntu.com/manpages/bionic/man3/utempter.3.html),
-    - with `master` as pseudo-terminal master file descriptor, "mosh [%ld]" as host name.
-  - Serve the client, via calling `serve()`. TODO
+- The parent process, which will run the mosh server process:
+  - Add utmp record via calling [`utempter_add_record()`](https://www.unix.com/man-page/suse/8/utempter),
+    - with `master` as pseudo-terminal master file descriptor, `"mosh [%ld]"` as host name.
+  - Serve the client, via calling [`serve()`](#serve).
     - with `master`, `terminal`, `network` as parameters.
-  - Delete utmp record via calling [`utempter_remove_record()`](http://manpages.ubuntu.com/manpages/bionic/man3/utempter.3.html),
+  - Delete utmp record via calling [`utempter_remove_record()`](https://www.unix.com/man-page/suse/8/utempter),
     - with `master` as pseudo-terminal master file descriptor.
   - Close the master pseudo-terminal.
   - Close server-related socket file descriptors, via calling `delete`.
@@ -147,15 +148,21 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 
 - Call `getenv()` or `getpwuid(getuid())` to get the `home` path.
 - Call `chdir()` to change to the `home` path.
-- Call `setenv()` to set the "PWD" envrionment variable.
+- Call `setenv()` to set the `"PWD"` envrionment variable.
 
 #### warn_unattached
 
 - `warn_unattached()` calls `getpwuid(getuid())` to get the current user.
 - `warn_unattached()` checks the records in `utmp` file
-  - If the `ut_user` field is the same user as the current user,
+  - If the `ut_user` field is the same user as the current user, via calling `getpwuid(getuid()`,
   - If the `ut_type` field is `USER_PROCESS`,
-  - If the `ut_host` field doesn't look like "mosh [%ld]", where `%ld` is the process ID,
-  - If device identified by the `ut_line` field exist, pushes the `ut_host` into `unattached_mosh_servers` vector.
+  - If the `ut_host` field does look like `"mosh [%ld]"`, where `%ld` is the process ID,
+  - If the `ut_host` field doesn't euqal `ignore_entry`, which is the mosh session,
+  - If pseudo-terminal device identified by the `ut_line` field exist,
+  - Pushes the `ut_host` into `unattached_mosh_servers` vector.
 - `warn_unattached()` returns if `unattached_mosh_servers` vector is empty.
 - `warn_unattached()` prints warning message to `STDOUT`, if there exists unattached sessions.
+
+### serve
+
+- TODO
