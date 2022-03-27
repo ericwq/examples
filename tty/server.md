@@ -43,18 +43,31 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 
 - For child process:
   - Re-enable signals `SIGHUP`, `SIGPIPE` with default value.
-  - Get the `termios` struct for `STDIN_FILENO`, via `tcgetattr()`.
-  - Set `IUTF8` flag for `termios`.
-  - Set the `termios` struct for `STDIN_FILENO`, via `tcsetattr()`.
+  - Close server-related socket file descriptors, via calling `delete`.
+  - Set terminal [UTF8 support](#how-to-set-the-terminal-utf8-support).
   - Set "TERM" envrionment variable to be "xterm" or "xterm-256color" based on "-c color" option.
-  - Set "NCURSES_NO_UTF8_ACS" envrionment variable to ask ncurses to send UTF-8 instead of ISO 2022 for line-drawing chars.
+  - Set "NCURSES_NO_UTF8_ACS" envrionment variable
+    - to ask ncurses to send UTF-8 instead of ISO 2022 for line-drawing chars.
   - Clear "STY" envrionment variable so GNU screen regards us as top level.
-  - Call `chdir_homedir()` to change to the home directory.
-    - Call `getenv()` or `getpwuid(getuid())` to get the `home` path.
-    - Call `chdir()` to change to the `home` path.
-    - Call `setenv()` to set the "PWD" envrionment variable.
-  - TODO
+  - Change to the home directory, via calling [`chdir_homedir()`](#chdir_homedir):
+  - If `.hushlogin` file don't exist and `with_motd` is true,
+    - print the motd from "/run/motd.dynamic",
+    - or print the motd from "/var/run/motd.dynamic" and "/etc/motd".
+  - Print warning message if there is unattached mosh session, via calling [`warn_unattached()`](#warn_unattached).
+  - Wait for parent to release us, via calling `fgets()` for `stdin`.
+  - Enable core dump, via calling `Crypto::reenable_dumping_core()`.
+  - Execute the shell command with arguments, via calling `execvp()`.
+  - Terminate the child process, via calling `exit()`.
 - For parent process:
+  - Add utmp record via calling [`utempter_add_record()`](http://manpages.ubuntu.com/manpages/bionic/man3/utempter.3.html),
+    - with `master` as pseudo-terminal master file descriptor, "mosh [%ld]" as host name.
+  - Serve the client, via calling `serve()`. TODO
+    - with `master`, `terminal`, `network` as parameters.
+  - Delete utmp record via calling [`utempter_remove_record()`](http://manpages.ubuntu.com/manpages/bionic/man3/utempter.3.html),
+    - with `master` as pseudo-terminal master file descriptor.
+  - Close the master pseudo-terminal.
+  - Close server-related socket file descriptors, via calling `delete`.
+  - Print exiting message.
 
 #### `ServerConnection`
 
@@ -123,3 +136,26 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `connection.get_key()` calls `key.printable_key()` instead.
 - `key.printable_key()` aka `Base64Key::printable_key()`.
 - `key.printable_key()` calls `base64_encode()` to show the `key` base64 representation.
+
+#### How to set the terminal UTF8 support
+
+- Get the `termios` struct for `STDIN_FILENO`, via calling `tcgetattr()`.
+- Set `IUTF8` flag for `termios`.
+- Set the `termios` struct for `STDIN_FILENO`, via calling `tcsetattr()`.
+
+#### chdir_homedir
+
+- Call `getenv()` or `getpwuid(getuid())` to get the `home` path.
+- Call `chdir()` to change to the `home` path.
+- Call `setenv()` to set the "PWD" envrionment variable.
+
+#### warn_unattached
+
+- `warn_unattached()` calls `getpwuid(getuid())` to get the current user.
+- `warn_unattached()` checks the records in `utmp` file
+  - If the `ut_user` field is the same user as the current user,
+  - If the `ut_type` field is `USER_PROCESS`,
+  - If the `ut_host` field doesn't look like "mosh [%ld]", where `%ld` is the process ID,
+  - If device identified by the `ut_line` field exist, pushes the `ut_host` into `unattached_mosh_servers` vector.
+- `warn_unattached()` returns if `unattached_mosh_servers` vector is empty.
+- `warn_unattached()` prints warning message to `STDOUT`, if there exists unattached sessions.
