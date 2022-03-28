@@ -165,4 +165,17 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 
 ### serve
 
-- TODO
+In the main loop(while loop), It performs the following steps:
+
+- `serve()` initializes the singleton `Select` object: `sel`.
+- `serve()` [registers signal handler](client.md#how-to-register-signal-handler) in `sel`, for `SIGTERM`, `SIGINT`, `SIGUSR1`.
+- `serve()` gets the latest remote state number, via calling `network.get_remote_state_num()`.
+- `serve()` sets `child_released` to false.
+- `serve()` calculates `timeout` based on `network.wait_time()` and `terminal.wait_time()`.
+- `serve()` gets the network sockets, via calling `network->fds()`.
+- `serve()` adds server network sockets to `sel`.
+- `serve()` adds pty master file descriptor to `sel`.
+- `serve()` waits for socket input, signal, pty master input via calling `sel.select()`, with the waittime `timeout`.
+- Upon receive signals, the corresponding item in `Select.got_signal` array is set.
+- Upon network sockets is ready to read, process it with `network.recv()`.
+- Upon pty master input is ready to read, process it with
