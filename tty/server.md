@@ -180,20 +180,52 @@ In the main loop(while loop), It performs the following steps:
 - Add pty master to `Select` object.
 - Wait for socket input, signal, pty master input via calling `sel.select()`, with the `timeout` as parameter.
 - Upon receive signals, the corresponding item in `Select.got_signal` array is set.
-- Upon network sockets is ready to read, process it with [`network.recv()`](client.md#how-to-receive-network-input).
+- Upon network sockets is ready to read, read it with [`network.recv()`](client.md#how-to-receive-network-input).
   - After `network.recv()`, the remote state is saved in `received_states`,
   - and the opposite direction `ack_num` is saved.
-  - If new user input available for the terminal,
-  - TODO
-  - Set the current state via calling `network.set_current_state()`, if `network` is not shutdown.
-  - If `connected_utmp` is false and `saved_addr_len` is different from `network.get_remote_addr_len()`,
-    - delete `utmp` record via calling [`utempter_remove_record()`](https://www.unix.com/man-page/suse/8/utempter), with pty master as parameter.
-    - store the value from `network.get_remote_addr()` into `saved_addr_len`,
-    - store the value from `network.get_remote_addr_len()` into `saved_addr_len`,
-    - get the `host` name via calling `getnameinfo()`,
-    - add `utmp` record via calling [`utempter_add_record`](https://www.unix.com/man-page/suse/8/utempter), with pty master and `host` as parameters.
-    - set `connected_utmp` to true.
-  - If `child_released` is false, release the child process via writing `\n` to pty master,
-    - upon receive the empty line input, the child process will start the shell.
-    - set `child_released` to true.
+  - If remote state number is not equal to `last_remote_num`, [forward input to terminal](#how-to-forward-input-to-terminal).
 - Upon pty master input is ready to read, process it with
+
+#### How to forward input to terminal
+
+- Update `last_remote_num` with the latest one.
+- Initialize a empty `UserStream` object: `us`.
+- Find the difference between new state and `last_receiver_state`, via calling [`network.get_remote_diff()`](#get_remote_diff).
+- Build the `UserStream` from the above `diff` string via calling `apply_string()`.
+- Iterate through the above `us`,
+  - get the `action` object of type `Parser::Action` via calling `us.get_action()`.
+  - `UserEvent` object contains `Parser::UserByte` object or `Parser::Resize` object.
+  - `Parser::UserByte` and `Parser::Resize` are sub-class of `Parser::Action`.
+  - For `Resize` action:
+    - first skip the consecutive Resize action,
+    - convert the action into `Parser::Resize`,
+    - get the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ` flag,
+    - set the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCSWINSZ` flag.
+  - For other action:
+    - set the terminal with `action`, via calling `terminal.act`,
+    - append the return value into `terminal_to_host`. TODO
+- If `us` is not empty,
+  - register input frame number for future echo ack via calling `terminal.register_input_frame()`.
+- Set the current state via calling `network.set_current_state()`, if `network` is not shutdown.
+- If `connected_utmp` is false and `saved_addr_len` is different from `network.get_remote_addr_len()`,
+  - delete `utmp` record via calling [`utempter_remove_record()`](https://www.unix.com/man-page/suse/8/utempter), with pty master as parameter.
+  - store the value from `network.get_remote_addr()` into `saved_addr_len`,
+  - store the value from `network.get_remote_addr_len()` into `saved_addr_len`,
+  - get the `host` name via calling `getnameinfo()`,
+  - add `utmp` record via calling [`utempter_add_record`](https://www.unix.com/man-page/suse/8/utempter), with pty master and `host` as parameters.
+  - set `connected_utmp` to true.
+- If `child_released` is false, release the child process via writing `\n` to pty master,
+  - upon receive the empty line input, the child process will start the shell.
+  - set `child_released` to true.
+
+#### get_remote_diff
+
+- `get_remote_diff()` aka `Transport<MyState, RemoteState>::get_remote_diff()`, here `RemoteState` is `UserStream`.
+- `get_remote_diff()` calls `diff_from()` to compare the newest `received_states` with `last_receiver_state` to [calculate diff](client.md#how-to-calculate-the-diff-for-userstream).
+- `diff_from()` returns serialized string of the `ClientBuffers::UserMessage` object.
+- `get_remote_diff()` sets the `oldest_receiver_state` with the value of the oldest `received_states`.
+- `get_remote_diff()` iterates through the `received_states` list in reverse order (newest to oldest).
+- `oldest_receiver_state` is the target to be evluated for each iteration.
+- For eache iterating state, calls `UserStream::subtract()` to subtract shared `UserEvent`.
+- `get_remote_diff()` stores the newest `received_states` in `last_receiver_state`.
+- The above implementation means `get_remote_diff()` returns the diff string and rationalizes the `received_states`.
