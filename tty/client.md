@@ -285,7 +285,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - `calculate_timers()` calls [`update_assumed_receiver_state()`](#how-to-pick-the-reciver-state) to update assumed receiver state.
   - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
   - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
-- `sender.tick()` calls `current_state.diff_from()` to [calculate diff](#how-to-calculate-the-diff-client-side).
+- `sender.tick()` calls `diff_from()` to compare `current_state` with `assumed_receiver_state` to [calculate diff](#how-to-calculate-the-diff-for-userstream).
 - `sender.tick()` calls `attempt_prospective_resend_optimization()` to optimize diff.
 - If `diff` is empty and if it's greater than the `next_ack_time`.
   - `sender.tick()` calls [`send_empty_ack()`](#how-to-send-empty-ack) to send ack.
@@ -315,18 +315,19 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
 - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
-#### How to calculate the diff (client side)
+#### How to calculate the diff for UserStream
 
 - `current_state.diff_from()` aka `UserStream::diff_from()`, who calculate diff based on user keystrokes.
-- `diff_from()` compares `current_state` with `assumed_receiver_state` to calculate the diff.
-- For client side:
-  - `diff_from()` compares two `UserStream` object.
-  - `diff_from()` finds the different position and build `ClientBuffers::UserMessage`, which is a proto2 message.
-  - `diff_from()` returns the serialized string for the `ClientBuffers::UserMessage` object.
-  - `UserMessage` contains several `ClientBuffers.Instruction`.
-  - `ClientBuffers.Instruction` is composed of `Keystroke` or `ResizeMessage` (see userinput.proto file)
-  - Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
-  - `ResizeMessage` is added to one `ClientBuffers.Instruction`.
+- `diff_from()` compares current `UserStream` with `existing` `UserStream` to calculate the diff.
+- `diff_from()` finds the position in the current `UserStream` with is different with `existing` `UserStream`.
+- `diff_from()` iterates to the end of current `UserStream` starting from the above position.
+- `diff_from()` build `ClientBuffers::UserMessage`, with the `UserEvent` object in each iteration,
+- `diff_from()` returns the serialized string of the `ClientBuffers::UserMessage` object.
+- `ClientBuffers::UserMessage` is a proto2 message. See userinput.proto file.
+- `ClientBuffers::UserMessage` contains several `ClientBuffers.Instruction`.
+- `ClientBuffers.Instruction` is composed of `Keystroke` or `ResizeMessage`.
+- Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
+- `ResizeMessage` is added to one `ClientBuffers.Instruction`.
 
 #### How to pick the reciver state
 
@@ -357,7 +358,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 #### How to send data in fragments
 
 - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
-- `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in [previous](#how-to-calculate-the-diff-client-side) step.
+- `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in [previous](#how-to-calculate-the-diff-for-userstream) step.
 - `TransportBuffers.Instruction` contains the following fields.
   - `old_num` field is the source number. It's value is `assumed_receiver_state->num`.
   - `new_num` field is the target number. It's value is specified by `new_num` parameter.
