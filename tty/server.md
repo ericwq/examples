@@ -165,17 +165,35 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 
 ### serve
 
-In the main loop(while loop), It performs the following steps:
-
 - `serve()` initializes the singleton `Select` object: `sel`.
 - `serve()` [registers signal handler](client.md#how-to-register-signal-handler) in `sel`, for `SIGTERM`, `SIGINT`, `SIGUSR1`.
 - `serve()` gets the latest remote state number, via calling `network.get_remote_state_num()`.
 - `serve()` sets `child_released` to false.
-- `serve()` calculates `timeout` based on `network.wait_time()` and `terminal.wait_time()`.
-- `serve()` gets the network sockets, via calling `network->fds()`.
-- `serve()` adds server network sockets to `sel`.
-- `serve()` adds pty master file descriptor to `sel`.
-- `serve()` waits for socket input, signal, pty master input via calling `sel.select()`, with the waittime `timeout`.
+- `serve()` sets `connected_utmp` to false, initializes `saved_addr` and `saved_addr_len` to zero and false.
+
+In the main loop(while loop), It performs the following steps:
+
+- Calculate `timeout` based on `network.wait_time()` and `terminal.wait_time()`.
+- Clear file descriptor, via calling `sel.clear_fds()`.
+- Get network socket, via calling `network->fds()`, `fd_list.back()`.
+- Add network socket to `Select` object.
+- Add pty master to `Select` object.
+- Wait for socket input, signal, pty master input via calling `sel.select()`, with the `timeout` as parameter.
 - Upon receive signals, the corresponding item in `Select.got_signal` array is set.
-- Upon network sockets is ready to read, process it with `network.recv()`.
+- Upon network sockets is ready to read, process it with [`network.recv()`](client.md#how-to-receive-network-input).
+  - After `network.recv()`, the remote state is saved in `received_states`,
+  - and the opposite direction `ack_num` is saved.
+  - If new user input available for the terminal,
+  - TODO
+  - Set the current state via calling `network.set_current_state()`, if `network` is not shutdown.
+  - If `connected_utmp` is false and `saved_addr_len` is different from `network.get_remote_addr_len()`,
+    - delete `utmp` record via calling [`utempter_remove_record()`](https://www.unix.com/man-page/suse/8/utempter), with pty master as parameter.
+    - store the value from `network.get_remote_addr()` into `saved_addr_len`,
+    - store the value from `network.get_remote_addr_len()` into `saved_addr_len`,
+    - get the `host` name via calling `getnameinfo()`,
+    - add `utmp` record via calling [`utempter_add_record`](https://www.unix.com/man-page/suse/8/utempter), with pty master and `host` as parameters.
+    - set `connected_utmp` to true.
+  - If `child_released` is false, release the child process via writing `\n` to pty master,
+    - upon receive the empty line input, the child process will start the shell.
+    - set `child_released` to true.
 - Upon pty master input is ready to read, process it with
