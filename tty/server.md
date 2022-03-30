@@ -256,7 +256,7 @@ In the main loop(while loop), It performs the following steps:
   - `emu->user.input()` has `UserByte` parameter and `application_mode_cursor_keys` parameter.
   - `emu->user.input()` checks the `UserByte` parameter.
   - For `Ground` character, `emu->user.input()` returns the raw character string.
-  - For `0x1b` character, `emu->user.input()` sets state to `ESC` and returns raw character string.
+  - For "0x1b" character, `emu->user.input()` sets state to `ESC` and returns raw character string.
   - If state is `ESC` and character is `O`,
     - `emu->user.input()` sets state to `SS3` and return empty string.
   - If state is `ESC` and character isn't `O`,
@@ -281,3 +281,5 @@ In the main loop(while loop), It performs the following steps:
   - `fb.resize()` adjust `Framebuffer.row` size according to the width and height parameters.
   - The above implementation means the `Framebuffer.ds` and `Framebuffer.row` is changed according to the parameters.
 - `act_on_terminal()` returns void.
+
+### How to read from client

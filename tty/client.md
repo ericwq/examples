@@ -27,6 +27,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - [STMClient constructor](#stmclient-constructor)
 - [STMClient::init](#stmclientinit)
 - [STMClient::main](#stmclientmain)
+- [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
 
 <!-- TODO what the purpose of `overlay`. -->
 
@@ -319,7 +320,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - `current_state.diff_from()` aka `UserStream::diff_from()`, who calculate diff based on user keystrokes.
 - `diff_from()` compares current `UserStream` with `existing` `UserStream` to calculate the diff.
-- `diff_from()` finds the position in the current `UserStream` with is different with `existing` `UserStream`.
+- `diff_from()` finds the position in the current `UserStream` which is different from `existing` `UserStream`.
 - `diff_from()` iterates to the end of current `UserStream` starting from the above position.
 - `diff_from()` build `ClientBuffers::UserMessage`, with the `UserEvent` object in each iteration,
 - `diff_from()` returns the serialized string of the `ClientBuffers::UserMessage` object.
@@ -498,3 +499,65 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `recv_one()` compares `packet_remote_addr` with `remote_addr`.
 - If the packet remote address is different than remote address, update the `remote_addr` and `remote_addr_len`.
 - `recv_one()` calls `getnameinfo()` to validate the new remote address.
+
+### How to send keystroke to remote server
+
+#### user keystroke -> `Network::UserStream`
+
+- Upon receiving user keystroke:
+  - [`STMClient::process_user_input()`](#how-to-process-the-user-input) reads user keystroke from `STDIN_FILENO`.
+  - [`STMClient::process_user_input()`](#how-to-process-the-user-input) wraps user keystroke with `Parser::UserByte`,
+  - `Parser::UserByte` contains `c` field.
+  - `Parser::UserByte` is wrapped in `Network::UserEvent` and pushed into `Network::UserStream` object.
+- Upon receiving signal `SIGWINCH`,
+  - [`STMClient::process_resize()`](#how-to-process-resize) gets the window size.
+  - [`STMClient::process_resize()`](#how-to-process-resize) creates `Parser::Resize` object with the above window size.
+  - `Parser::Resize` contains `width` and `height` fields.
+  - `Parser::Resize` is wrapped in `Network::UserEvent` and pushed into `Network::UserStream` object.
+- `Network::UserStream` contains a deque of type `Network::UserEvent`.
+- `Network::UserEvent` contains the following fields:
+  - `type`,
+  - `userbyte`,
+  - `resize`.
+
+#### `Network::UserStream` -> `TransportBuffers.Instruction` -> `Network::Fragment`
+
+When it's time to send the `Network::UserStream` to remote server:
+
+- [`sender.tick()`](#how-does-the-network-tick) calculates the difference between two `Network::UserStream` objects.
+- The difference is transformed into string representation of `ClientBuffers::UserMessage`.
+- [`send_in_fragments()`](#how-to-send-data-in-fragments) constructs the `TransportBuffers.Instruction` object.
+- [`send_in_fragments()`](#how-to-send-data-in-fragments) assigns the tring representation of `ClientBuffers::UserMessage` as `diff` field.
+- `TransportBuffers.Instruction` is the "state" in [transport layter](ref.md#transport-layer).
+- `TransportBuffers.Instruction` contains the following fields:
+  - `old_num`,
+  - `new_num`,
+  - `ack_num`,
+  - `throwaway_num`,
+  - `diff`.
+- [`send_in_fragments()`](#how-to-send-data-in-fragments) splits `TransportBuffers.Instruction` into one or several `Network::Fragment` based on `MTU` size.
+- `Network::Fragment` is a utility class because of `MTU`.
+- `Network::Fragment` contains the following fields:
+  - `id`,
+  - `fragment_num`,
+  - `final`,
+  - `contents`.
+- [`send_in_fragments()`](#how-to-send-data-in-fragments) transforms `Network::Fragment` into network order string.
+
+#### `Network::Fragment` -> `Network::Packet` -> `Crypto::Message`
+
+- `Connection::send()` transforms the above network order string into `Network::Packet`.
+- `Network::Packet` belongs to in [datagram layter](ref.md#datagram-layer).
+- `Network::Packet` contains the following fields:
+  - `seq`,
+  - `timestamp`,
+  - `timestamp_reply`,
+  - `payload`,
+  - `direction`.
+- [`Connection::send()`](#how-to-send-a-packet) transfroms `Network::Packet` into `Crypto::Message`.
+- `Crypto::Message` is a utility calls for crypto.
+- `Crypto::Message` contains the following fields:
+  - `Nonce`: contains `direction` and `seq` fields in `Network::Packet`.
+  - `text`: contains `timestamp`, `timestamp_reply` and `payload` fields in `Network::Packet`.
+- [`Connection::send()`](#how-to-send-a-packet) encrypts `Crypto::Message`.
+- [`Connection::send()`](#how-to-send-a-packet) sents `Crypto::Message` to remote server in UDP datagram.
