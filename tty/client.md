@@ -502,7 +502,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 ### How to send keystroke to remote server
 
-#### user keystroke -> `Network::UserStream`
+#### user keystroke -> `Parser::UserByte` -> `Network::UserEvent` -> `Network::UserStream`
 
 - Upon receiving user keystroke:
   - [`STMClient::process_user_input()`](#how-to-process-the-user-input) reads user keystroke from `STDIN_FILENO`.
@@ -527,7 +527,7 @@ When it's time to send the `Network::UserStream` to remote server:
 - [`sender.tick()`](#how-does-the-network-tick) calculates the difference between two `Network::UserStream` objects.
 - The difference is transformed into string representation of `ClientBuffers::UserMessage`.
 - [`send_in_fragments()`](#how-to-send-data-in-fragments) constructs the `TransportBuffers.Instruction` object.
-- [`send_in_fragments()`](#how-to-send-data-in-fragments) assigns the tring representation of `ClientBuffers::UserMessage` as `diff` field.
+- The string representation of `ClientBuffers::UserMessage` is assigned to the `diff` field of `TransportBuffers.Instruction`.
 - `TransportBuffers.Instruction` is the "state" in [transport layter](ref.md#transport-layer).
 - `TransportBuffers.Instruction` contains the following fields:
   - `old_num`,
@@ -555,7 +555,7 @@ When it's time to send the `Network::UserStream` to remote server:
   - `payload`,
   - `direction`.
 - [`Connection::send()`](#how-to-send-a-packet) transfroms `Network::Packet` into `Crypto::Message`.
-- `Crypto::Message` is a utility calls for crypto.
+- `Crypto::Message` is a utility class for crypto.
 - `Crypto::Message` contains the following fields:
   - `Nonce`: contains `direction` and `seq` fields in `Network::Packet`.
   - `text`: contains `timestamp`, `timestamp_reply` and `payload` fields in `Network::Packet`.
