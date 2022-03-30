@@ -184,7 +184,7 @@ In the main loop(while loop), It performs the following steps:
   - After `network.recv()`, the remote state is saved in `received_states`,
   - and the opposite direction `ack_num` is saved.
   - If remote state number is not equal to `last_remote_num`, [forward input to terminal](#how-to-forward-input-to-terminal).
-- Upon pty master input is ready to read, process it with
+- Upon pty master input is ready to read, process it with TODO
 
 #### How to forward input to terminal
 
@@ -192,6 +192,12 @@ In the main loop(while loop), It performs the following steps:
 - Initialize a empty `UserStream` object: `us`.
 - Find the difference between new state and `last_receiver_state`, via calling [`network.get_remote_diff()`](#get_remote_diff).
 - Build the `UserStream` from the above `diff` string via calling `apply_string()`.
+  - `apply_string()` aka `UserStream::apply_string()`.
+  - `apply_string()` creates a `ClientBuffers::UserMessage` object.
+  - `apply_string()` parses the string from `diff` parameter.
+  - `apply_string()` iterates the `ClientBuffers::UserMessage` object.
+  - For each iteration, `apply_string()` builds `UserEvent` and pushes it into `UserStream.actions`.
+  - The implementation means `apply_string()` convert `Instruction` into `UserStream`.
 - Iterate through the above `us`,
   - get the `action` object of type `Parser::Action` via calling `us.get_action()`.
   - `UserEvent` object contains `Parser::UserByte` object or `Parser::Resize` object.
