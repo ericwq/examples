@@ -31,7 +31,7 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `run_server()` sets the `verbose` mode via `Select::set_verbose()`.
 - `run_server()` calls `network->port()` to [get the port string](#how-to-get-port-string) representation.
 - `run_server()` calls `network->get_key()` to [get the session key string](#how-to-get-session-key-string) representation.
-- `run_server()` prints port and session key to the standard output. The output starts with `"MOSH CONNECT "`.
+- `run_server()` prints port and session key to the standard output. The output starts with "MOSH CONNECT ".
 - `run_server()` ignores signal `SIGHUP`, `SIGPIPE`.
 - `run_server()` calls `fork()` to detach from terminal.
   - Parent process prints the license information and terminates.
@@ -45,10 +45,10 @@ In the `main` function: `run_server` is the core to start `mosh` server.
   - Re-enable signals `SIGHUP`, `SIGPIPE` with default value.
   - Close server-related socket file descriptors, via calling `delete`.
   - Set terminal [UTF8 support](#how-to-set-the-terminal-utf8-support).
-  - Set `"TERM"` envrionment variable to be `"xterm"` or `"xterm-256color"` based on `"-c color"` option.
-  - Set `"NCURSES_NO_UTF8_ACS"` envrionment variable
+  - Set "TERM" environment variable to be "xterm" or "xterm-256color" based on "-c color" option.
+  - Set `"NCURSES_NO_UTF8_ACS"` environment variable
     - to ask ncurses to send UTF-8 instead of ISO 2022 for line-drawing chars.
-  - Clear `"STY"` envrionment variable so GNU screen regards us as top level.
+  - Clear `"STY"` environment variable so GNU screen regards us as top level.
   - Change to the home directory, via calling [`chdir_homedir()`](#chdir_homedir):
   - If `.hushlogin` file don't exist and `with_motd` is true,
     - print the motd from `"/run/motd.dynamic"`,
@@ -148,7 +148,7 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 
 - Call `getenv()` or `getpwuid(getuid())` to get the `home` path.
 - Call `chdir()` to change to the `home` path.
-- Call `setenv()` to set the `"PWD"` envrionment variable.
+- Call `setenv()` to set the `"PWD"` environment variable.
 
 #### warn_unattached
 
@@ -157,13 +157,13 @@ In the `main` function: `run_server` is the core to start `mosh` server.
   - If the `ut_user` field is the same user as the current user, via calling `getpwuid(getuid()`,
   - If the `ut_type` field is `USER_PROCESS`,
   - If the `ut_host` field does look like `"mosh [%ld]"`, where `%ld` is the process ID,
-  - If the `ut_host` field doesn't euqal `ignore_entry`, which is the mosh session,
+  - If the `ut_host` field isn't equal to `ignore_entry`, which is the mosh session,
   - If pseudo-terminal device identified by the `ut_line` field exist,
   - Pushes the `ut_host` into `unattached_mosh_servers` vector.
 - `warn_unattached()` returns if `unattached_mosh_servers` vector is empty.
 - `warn_unattached()` prints warning message to `STDOUT`, if there exists unattached sessions.
 
-### serve
+#### serve
 
 - `serve()` initializes the singleton `Select` object: `sel`.
 - `serve()` [registers signal handler](client.md#how-to-register-signal-handler) in `sel`, for `SIGTERM`, `SIGINT`, `SIGUSR1`.
@@ -197,13 +197,13 @@ In the main loop(while loop), It performs the following steps:
   - `UserEvent` object contains `Parser::UserByte` object or `Parser::Resize` object.
   - `Parser::UserByte` and `Parser::Resize` are sub-class of `Parser::Action`.
   - For `Resize` action:
-    - first skip the consecutive Resize action,
+    - skip the consecutive Resize action,
     - convert the action into `Parser::Resize`,
     - get the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ` flag,
     - set the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCSWINSZ` flag.
   - For other action:
-    - set the terminal with `action`, via calling `terminal.act`,
-    - append the return value into `terminal_to_host`. TODO
+    - call [`terminal.act()`](#terminalact) to get the transcript character.
+    - append the transcript character to `terminal_to_host`.
 - If `us` is not empty,
   - register input frame number for future echo ack via calling `terminal.register_input_frame()`.
 - Set the current state via calling `network.set_current_state()`, if `network` is not shutdown.
@@ -229,3 +229,49 @@ In the main loop(while loop), It performs the following steps:
 - For eache iterating state, calls `UserStream::subtract()` to subtract shared `UserEvent`.
 - `get_remote_diff()` stores the newest `received_states` in `last_receiver_state`.
 - The above implementation means `get_remote_diff()` returns the diff string and rationalizes the `received_states`.
+
+#### terminal.act
+
+- `terminal.act()` aka `Complete::act()`.
+- `terminal.act()` apply action to terminal via calling `act->act_on_terminal()` with the `terminal` as parameter.
+  - For `UserByte` action, [`UserByte::act_on_terminal`](#userbyteact_on_terminal) will store the transcript character to `dispatch.terminal_to_host`.
+  - For `Resize` action, [`Resize::act_on_terminal`](#resizeact_on_terminal) will change the terminal frame buffer size.
+- `terminal.act()` returns `terminal.read_octets_to_host()`.
+  - `terminal.read_octets_to_host()` aka `Emulator::read_octets_to_host()`.
+  - `terminal.read_octets_to_host()` reads `dispatch.terminal_to_host` to `ret`.
+  - `terminal.read_octets_to_host()` clears `dispatch.terminal_to_host`.
+  - `terminal.read_octets_to_host()` returns `ret`.
+- The above implementation means `terminal.act()` return the transcript character to caller.
+
+#### UserByte::act_on_terminal
+
+- `act_on_terminal()` has parameter `Terminal::Emulator* emu`.
+- `act_on_terminal()` calls `emu->user.input()` to convert user's cursor control sequence to ANSI cursor control sequence.
+  - `emu->user.input()` has `UserByte` parameter and `application_mode_cursor_keys` parameter.
+  - `emu->user.input()` checks the `UserByte` parameter.
+  - For `Ground` character, `emu->user.input()` returns the raw character string.
+  - For `0x1b` character, `emu->user.input()` sets state to `ESC` and returns raw character string.
+  - If state is `ESC` and character is `O`,
+    - `emu->user.input()` sets state to `SS3` and return empty string.
+  - If state is `ESC` and character isn't `O`,
+    - `emu->user.input()` sets state to `Ground` and return raw character string.
+  - If state is `SS3` and character isn't `A-D` and `application_mode_cursor_keys` is false,
+    - `emu->user.input()` sets state to `Ground` and return `ESC [ [A-D]` string.
+  - If state is `SS3` and character isn't `A-D` and `application_mode_cursor_keys` is true,
+    - `emu->user.input()` sets state to `Ground` and return `ESC O [A-D]` string.
+- `act_on_terminal()` calls `emu->dispatch.terminal_to_host.append()` to append the above string to terminal `dispatch.terminal_to_host`.
+- `act_on_terminal()` returns void.
+
+#### Resize::act_on_terminal
+
+- `act_on_terminal()` has parameter `Terminal::Emulator* emu`.
+- `act_on_terminal()` calls `emu->resize()` to adjust terminal frame buffer size.
+  - `emu->resize()` aka `Emulator::resize()`.
+  - `emu->resize()` has `s_width` and `s_height` parameter.
+  - `emu->resize()` calls `fb.resize()` to finish the job.
+  - `fb.resize()` aka `Framebuffer::resize()`.
+  - `fb.resize()` has `s_width` and `s_height` as parameters.
+  - `fb.resize()` adjust `Framebuffer.ds` size according to the width and height parameters.
+  - `fb.resize()` adjust `Framebuffer.row` size according to the width and height parameters.
+  - The above implementation means the `Framebuffer.ds` and `Framebuffer.row` is changed according to the parameters.
+- `act_on_terminal()` returns void.
