@@ -288,13 +288,13 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
 
 #### `Crypto::Message` -> `Network::Packet` -> `Network::Fragment`
 
-- `Connection::recv_one()` reads UDP datagram from server socket.
-- `Connection::recv_one()` decrypts the UDP datagram into `Crypto::Message`.
+- [`Connection::recv_one()`](client.md#how-to-receive-datagram-from-socket) reads UDP datagram from server socket.
+- [`Connection::recv_one()`](client.md#how-to-receive-datagram-from-socket) decrypts the UDP datagram into `Crypto::Message`.
 - `Crypto::Message` is a utility class for crypto.
 - `Crypto::Message` contains the following fields:
   - `Nonce`: contains `direction` and `seq` fields in `Network::Packet`.
   - `text`: contains `timestamp`, `timestamp_reply` and `payload` fields in `Network::Packet`.
-- `Connection::recv_one()` transforms `Crypto::Message` into `Network::Packet`.
+- [`Connection::recv_one()`](client.md#how-to-receive-datagram-from-socket) transforms `Crypto::Message` into `Network::Packet`.
 - `Network::Packet` belongs to in [datagram layter](ref.md#datagram-layer).
 - `Network::Packet` contains the following fields:
   - `seq`,
@@ -302,9 +302,9 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
   - `timestamp_reply`,
   - `payload`,
   - `direction`.
-- `Connection::recv_one()` returns string representation of `Network::Packet` paylod field.
-- `Connection::recv()` returns string representation of `Network::Packet` payload field.
-- `Fragment()` transform `Network::Packet` into `Network::Fragment`
+- [`Connection::recv_one()`](client.md#how-to-receive-datagram-from-socket) returns string representation of `Network::Packet` paylod field.
+- [`Connection::recv()`](client.md#how-to-read-data-from-socket) returns string representation of `Network::Packet` payload field.
+- [`Fragment()`](client.md#how-to-create-the-frament-from-string) transform `Network::Packet` into `Network::Fragment`
 - `Network::Fragment` contains the following fields:
   - `id`,
   - `fragment_num`,
@@ -313,9 +313,9 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
 
 #### `Network::Fragment` -> `TransportBuffers.Instruction` -> `Network::UserStream`
 
-- `fragments.get_assembly()` aka `FragmentAssembly::get_assembly()`.
-- `fragments.get_assembly()` concatenates the `contents` field of each `Network::Fragment` into one string.
-- `fragments.get_assembly()` decompress the string and transforms it into `TransportBuffers.Instruction`.
+- [`fragments.get_assembly()`](client.md#how-to-build-instruction-from-fragments) aka `FragmentAssembly::get_assembly()`.
+- [`fragments.get_assembly()`](client.md#how-to-build-instruction-from-fragments) concatenates the `contents` field of each `Network::Fragment` into one string.
+- [`fragments.get_assembly()`](client.md#how-to-build-instruction-from-fragments) decompress the string and transforms it into `TransportBuffers.Instruction`.
 - `TransportBuffers.Instruction` is the "state" in [transport layter](ref.md#transport-layer).
 - `TransportBuffers.Instruction` contains the following fields:
   - `old_num`,
@@ -323,7 +323,8 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
   - `ack_num`,
   - `throwaway_num`,
   - `diff`.
-- `connection->recv()` creates an empty `TimestampedState<Network::UserStream>`.
+- [`connection->recv()`](client.md#how-to-read-data-from-socket) creates an empty `TimestampedState<Network::UserStream>`.
+- `Network::UserStream` is wrapped in `TimestampedState<Network::UserStream>`.
 - `TimestampedState<Network::UserStream>` contains the following fields:
   - `timestamp`,
   - `num`,
@@ -331,15 +332,15 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
 
 #### `Parser::UserByte` -> `Network::UserEvent` -> `Network::UserStream`
 
-- `UserStream::apply_string` transforms `TransportBuffers.Instruction` into `ClientBuffers::UserMessage`.
-- `UserStream::apply_string` iterates through `ClientBuffers::UserMessage`.
-- `UserStream::apply_string` builds `Parser::UserByte` or `Parser::Resize` object from `ClientBuffers::UserMessage`.
-- `UserStream::apply_string` wraps `Parser::UserByte` in `Network::UserEvent`.
-- `UserStream::apply_string` pushes `Network::UserEvent` into `Network::UserStream` object.
+- `apply_string()` akak [`UserStream::apply_string()`](#how-to-forward-input-to-terminal).
+- `apply_string() transforms `TransportBuffers.Instruction`into`ClientBuffers::UserMessage`.
+- `apply_string()` iterates through `ClientBuffers::UserMessage`.
+- `apply_string()` builds `Parser::UserByte` or `Parser::Resize` object from `ClientBuffers::UserMessage`.
+- `apply_string()` wraps `Parser::UserByte` in `Network::UserEvent`.
+- `apply_string()` pushes `Network::UserEvent` into `Network::UserStream` object.
 - `Network::UserStream` contains a deque of type `Network::UserEvent`.
 - `Network::UserEvent` contains the following fields:
   - `type`,
   - `userbyte`,
   - `resize`.
-- `connection->recv()` wraps `Network::UserStream` in `TimestampedState<Network::UserStream>`.
-- `connection->recv()` stores `TimestampedState<Network::UserStream>` in `received_states`.
+- [`connection->recv()`](client.md#how-to-receive-network-input) stores `TimestampedState<Network::UserStream>` in `received_states`.
