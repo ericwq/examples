@@ -427,8 +427,10 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `network->recv()` limits the `received_states` queue size via drop the received state:
   - If `received_states.size() < 1024` and current time is less than `receiver_quench_timer`.
   - The value of `receiver_quench_timer` is `now` plus 15000ms.
-- `network->recv()` applies `diff` to reference state, if `diff` is not empty.
-  - It creates a new state, which applies the `diff` to the reference state.
+- If `Instruction` diff field is not empty, `network->recv()` calls [`new_state.state.apply_string()`](server.md#apply_string).
+  - `apply_string()` is called with `Instruction` diff field as parameter.
+  - `apply_string()` initializes `RemoteState` with `ClientBuffers::UserMessage`.
+- `network->recv()` initializes a `RemoteState` and wraps it in `TimestampedState<RemoteState>`.
 - If out-of-order state is received, `network->recv()` inserts new state and returns directly,
 - `network->recv()` calls `received_states.push_back()` to store the new state.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
