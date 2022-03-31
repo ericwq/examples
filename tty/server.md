@@ -10,12 +10,33 @@ Usage: mosh-server --help
 Usage: mosh-server --version
 ```
 
+- [Run the server](#run_server)
+- [Serve the client](#serve)
+- [How to read from client connection](#how-to-read-from-client-connection)
+
+### main
+
+```go
+int main(int argc, char* argv[]) {
+	//+--184 lines: folding ----------
+	try {
+		return run_server(desired_ip, desired_port, command_path, command_argv, colors, verbose, with_motd);
+	} catch (const Network::NetworkException& e) {
+		fprintf(stderr, "Network exception: %s\n", e.what());
+		return 1;
+	} catch (const Crypto::CryptoException& e) {
+		fprintf(stderr, "Crypto exception: %s\n", e.what());
+		return 1;
+	}
+}
+```
+
 In the `main` function: `run_server` is the core to start `mosh` server.
 
 - `main()` calls `Crypto::disable_dumping_core()` to make sure we don't dump core.
-- `main()` parses `new` command-line syntax.
+- `main()` parses command parameters
 - `main()` checks port range.
-- `main()` gets shell name and prepares for shell command arguments.
+- `main()` prepares shell name and shell command arguments.
 - `main()` makes sure UTF8 locale is set.
 - `main()` calls [`run_server()`](#run_server) with the ip, port and shell path, shell arguments,(etc.) as parameters.
 
@@ -25,8 +46,8 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `run_server()` gets network signaled idle timeout.
 - `run_server()` gets initial window size. They will be overwritten by client on first connection.
 - `run_server()` calls [`Terminal::Complete()`](client.md#terminalcomplete) to open parser and terminal.
-- `run_server()` creates blank [`Network::UserStream`](client.md#networkuserstream).
-- `run_server()` creates ` network`, which is type of [`ServerConnection`](#serverconnection).
+- `run_server()` creates blank [`Network::UserStream`](client.md#networkuserstream) for newtork.
+- `run_server()` initializes network, which is [`ServerConnection`](#serverconnection).
 - `run_server()` sets the `verbose` mode via `network->set_verbose()`.
 - `run_server()` sets the `verbose` mode via `Select::set_verbose()`.
 - `run_server()` calls `network->port()` to [get the port string](#how-to-get-port-string) representation.
@@ -34,7 +55,7 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `run_server()` prints port and session key to the standard output. The output starts with "MOSH CONNECT ".
 - `run_server()` ignores signal `SIGHUP`, `SIGPIPE`.
 - `run_server()` calls `fork()` to detach from terminal.
-  - Parent process prints the license information and terminates.
+  - Parent process prints the license information and exits.
   - Child process continues.
 - `run_server()` redirects `STDIN_FILENO`, `STDOUT_FILENO`, `STDERR_FILENO` to `"/dev/null"` for non-verbose mode.
 - `run_server()` calls [`forkpty()`](#forkpty) to create a new process operating in a pseudo terminal.
@@ -53,19 +74,21 @@ In the `main` function: `run_server` is the core to start `mosh` server.
   - If `.hushlogin` file don't exist and `with_motd` is true,
     - print the motd from `"/run/motd.dynamic"`,
     - or print the motd from `"/var/run/motd.dynamic"` and `"/etc/motd"`.
-  - Print warning message if there is unattached mosh session, via calling [`warn_unattached()`](#warn_unattached).
+    - Print warning message if there is unattached mosh session, via calling [`warn_unattached()`](#warn_unattached).
     - See the following parent process to understand mosh session.
   - Wait for parent to release us, via calling `fgets()` for `stdin`.
   - Enable core dump, via calling `Crypto::reenable_dumping_core()`.
   - Execute the shell command with arguments, via calling `execvp()`.
-  - Terminate the child process, via calling `exit()`.
+  - If error happens during `execvp()`, Terminate the child process, via calling `exit()`.
 - The parent process, which will run the mosh server process:
   - Add utmp record via calling [`utempter_add_record()`](https://www.unix.com/man-page/suse/8/utempter),
-    - with `master` as pseudo-terminal master file descriptor, `"mosh [%ld]"` as host name.
+    - with `master` as pty master parameter, `"mosh [%ld]"` as host name parameter.
+    - as login service update utmp record is required.
   - Serve the client, via calling [`serve()`](#serve).
     - with `master`, `terminal`, `network` as parameters.
   - Delete utmp record via calling [`utempter_remove_record()`](https://www.unix.com/man-page/suse/8/utempter),
-    - with `master` as pseudo-terminal master file descriptor.
+    - with `master` as pty master parameter.
+    - as login service update utmp record is required.
   - Close the master pseudo-terminal.
   - Close server-related socket file descriptors, via calling `delete`.
   - Print exiting message.
@@ -191,13 +214,7 @@ In the main loop(while loop), It performs the following steps:
 - Update `last_remote_num` with the latest one.
 - Initialize a empty `UserStream` object: `us`.
 - Find the difference between new state and `last_receiver_state`, via calling [`network.get_remote_diff()`](#get_remote_diff).
-- Build the `UserStream` from the above `diff` string via calling `apply_string()`.
-  - `apply_string()` aka `UserStream::apply_string()`.
-  - `apply_string()` creates a `ClientBuffers::UserMessage` object.
-  - `apply_string()` parses the string from `diff` parameter.
-  - `apply_string()` iterates the `ClientBuffers::UserMessage` object.
-  - For each iteration, `apply_string()` builds `UserEvent` and pushes it into `UserStream.actions`.
-  - The implementation means `apply_string()` convert `Instruction` into `UserStream`.
+- Initialize the `UserStream` from the above difference string via calling `apply_string()`.
 - Iterate through the above `us`,
   - get the `action` object of type `Parser::Action` via calling `us.get_action()`.
   - `UserEvent` object contains `Parser::UserByte` object or `Parser::Resize` object.
@@ -226,15 +243,29 @@ In the main loop(while loop), It performs the following steps:
 
 #### get_remote_diff
 
-- `get_remote_diff()` aka `Transport<MyState, RemoteState>::get_remote_diff()`, here `RemoteState` is `UserStream`.
-- `get_remote_diff()` calls `diff_from()` to compare the newest `received_states` with `last_receiver_state` to [calculate diff](client.md#how-to-calculate-the-diff-for-userstream).
-- `diff_from()` returns serialized string of the `ClientBuffers::UserMessage` object.
-- `get_remote_diff()` sets the `oldest_receiver_state` with the value of the oldest `received_states`.
-- `get_remote_diff()` iterates through the `received_states` list in reverse order (newest to oldest).
-- `oldest_receiver_state` is the target to be evluated for each iteration.
-- For eache iterating state, calls `UserStream::subtract()` to subtract shared `UserEvent`.
-- `get_remote_diff()` stores the newest `received_states` in `last_receiver_state`.
-- The above implementation means `get_remote_diff()` returns the diff string and rationalizes the `received_states`.
+- `get_remote_diff()` aka `Transport<MyState, RemoteState>::get_remote_diff()`.
+- Here `RemoteState` is `UserStream`.
+- `get_remote_diff()` calls `diff_from()` to [calculate diff](client.md#how-to-calculate-the-diff-for-userstream).
+  - `diff_from()` to compare the newest `received_states` with `last_receiver_state` .
+  - `diff_from()` returns the difference string representation of the `ClientBuffers::UserMessage` object.
+- Next `get_remote_diff()` rationalizes `received_states`.
+  - `get_remote_diff()` sets the `oldest_receiver_state` with the value of the oldest `received_states`.
+  - `get_remote_diff()` iterates through the `received_states` list in reverse order (newest to oldest).
+  - `oldest_receiver_state` is the target to be evluated for each iteration.
+  - For eache iterating state, calls `UserStream::subtract()` to subtract shared `UserEvent`.
+  - `get_remote_diff()` stores the newest `received_states` in `last_receiver_state`.
+- `get_remote_diff()` returns the difference string representation of `ClientBuffers::UserMessage`.
+
+#### apply_string
+
+- `apply_string()` aka `UserStream::apply_string()`.
+- `apply_string()` creates a `ClientBuffers::UserMessage` object.
+- `apply_string()` parses string representation of `ClientBuffers::UserMessage`.
+- `apply_string()` iterates through `ClientBuffers::UserMessage` object.
+- `apply_string()` extracts `UserByte` or `Resize` from `ClientBuffers::UserMessage`.
+- `apply_string()` wraps `UserByte` or `Resize` in `UserEvent` and pushes `UserEvent` into `UserStream`.
+- For each iteration, `apply_string()` builds `UserEvent` and pushes it into `UserStream.actions`.
+- That means `apply_string()` initializes `UserStream` with `ClientBuffers::UserMessage`.
 
 #### terminal.act
 
@@ -323,7 +354,7 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
   - `ack_num`,
   - `throwaway_num`,
   - `diff`.
-- [`connection->recv()`](client.md#how-to-read-data-from-socket) creates an empty `TimestampedState<Network::UserStream>`.
+- [`connection->recv()`](client.md#how-to-receive-network-input) creates an empty `TimestampedState<Network::UserStream>`.
 - `Network::UserStream` is wrapped in `TimestampedState<Network::UserStream>`.
 - `TimestampedState<Network::UserStream>` contains the following fields:
   - `timestamp`,
@@ -332,12 +363,9 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
 
 #### `Parser::UserByte` -> `Network::UserEvent` -> `Network::UserStream`
 
-- `apply_string()` akak [`UserStream::apply_string()`](#how-to-forward-input-to-terminal).
-- `apply_string() transforms `TransportBuffers.Instruction`into`ClientBuffers::UserMessage`.
-- `apply_string()` iterates through `ClientBuffers::UserMessage`.
-- `apply_string()` builds `Parser::UserByte` or `Parser::Resize` object from `ClientBuffers::UserMessage`.
-- `apply_string()` wraps `Parser::UserByte` in `Network::UserEvent`.
-- `apply_string()` pushes `Network::UserEvent` into `Network::UserStream` object.
+- [`network.get_remote_diff()`](#get_remote_diff) compares the newest `Network::UserStream` and existing `Network::UserStream`.
+- [`network.get_remote_diff()`](#get_remote_diff) returns the difference string representation of `ClientBuffers::UserMessage`.
+- [`UserStream.apply_string()`](#apply_string) initializes `UserStream` with `ClientBuffers::UserMessage`.
 - `Network::UserStream` contains a deque of type `Network::UserEvent`.
 - `Network::UserEvent` contains the following fields:
   - `type`,
