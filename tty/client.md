@@ -1,5 +1,7 @@
 # Mosh client coding analysis
 
+![mosh-comm.svg](img/mosh-comm.svg)
+
 ## mosh-client.cc
 
 In the `main` function, `STMClient` is the core to start `mosh` client.

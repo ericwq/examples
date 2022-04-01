@@ -1,5 +1,7 @@
 # Mosh server coding analysis
 
+![mosh-comm.svg](img/mosh-comm.svg)
+
 ## mosh-server.cc
 
 `mosh-server` command parameters.
@@ -16,7 +18,7 @@ Usage: mosh-server --version
 
 ### main
 
-```go
+```cpp
 int main(int argc, char* argv[]) {
 	//+--184 lines: folding ----------
 	try {
@@ -206,15 +208,19 @@ In the main loop(while loop), It performs the following steps:
 - Upon network sockets is ready to read, read it with [`network.recv()`](client.md#how-to-receive-network-input).
   - After `network.recv()`, the remote state is saved in `received_states`,
   - and the opposite direction `ack_num` is saved.
-  - If remote state number is not equal to `last_remote_num`, [forward input to terminal](#how-to-forward-input-to-terminal).
-- Upon pty master input is ready to read, process it with TODO
+  - [forward input to terminal](#how-to-forward-input-to-terminal) if remote state number is not equal to `last_remote_num`.
+- Upon pty master input is ready to read, read it via calling `read()` system call.
+  - If it does read some input, call [`terminal.act()`](#terminalactstring) to process the input data.
+  - append the return value of `terminal.act()` to `terminal_to_host`.
+  - set currrent state via calling `network.set_current_state()` with the `terminal` as parameter.
+- `swrite` TODO
 
 #### How to forward input to terminal
 
 - Update `last_remote_num` with the latest one.
 - Initialize a empty `UserStream` object: `us`.
 - Find the difference between new state and `last_receiver_state`, via calling [`network.get_remote_diff()`](#get_remote_diff).
-- Initialize the `UserStream` from the above difference string via calling `apply_string()`.
+- Initialize the `UserStream` from the above difference string via calling [`apply_string()`](#apply_string).
 - Iterate through the above `us`,
   - get the `action` object of type `Parser::Action` via calling `us.get_action()`.
   - `UserEvent` object contains `Parser::UserByte` object or `Parser::Resize` object.
@@ -312,6 +318,62 @@ In the main loop(while loop), It performs the following steps:
   - `fb.resize()` adjust `Framebuffer.row` size according to the width and height parameters.
   - The above implementation means the `Framebuffer.ds` and `Framebuffer.row` is changed according to the parameters.
 - `act_on_terminal()` returns void.
+
+#### terminal.act(string)
+
+- `terminal.act(string)` aka `Complete::act(string)`.
+- Iterate the string parameter,
+- For each character, call `parser.input()` to parse octet into up to three actions.
+  - Iterate the `actions`, for each action,
+  - apply action on terminal via calling `act->act_on_terminal()` with the `terminal` as parameter.
+- Clear the `actions` via calling `actions.clear()`.
+- Return `terminal.read_octets_to_host()`.
+
+![mosh-parse.svg](img/mosh-parse.svg)
+
+#### Parse unicode character to action
+
+- The first `parser.input()` is actually `Parser::UTF8Parser::input()`.
+- If ASCII code ( less than "0x7f") and `buf_len` is 0,
+  - call the [second `parser.input()`](#parse-wide-character-according-to-transition) with the `actions` as parameter.
+  - `actions` aka `Complete.actions`, a vector of type `Parser::Action`
+  - return early.
+- Assign the `c` to `buf[buf_len++]`.
+- Parse the `buf` fields of `Parser::UTF8Parser` in a loop.
+  - According to Unicode 6.0, section 3.9 [Best Practices for using U+FFFD](https://www.unicode.org/versions/Unicode6.0.0/ch03.pdf).
+  - Convert multi-byte sequence to wide character via calling `mbrtowc()`.
+  - Call the [second `parser.input()`](#parse-wide-character-according-to-transition) for the wide character with the `actions` as parameter.
+  - Continue the loop until all byte is parsed.
+
+#### Parse wide character according to `Transition`
+
+- The second `parser.input()` is actually `Parser::Parser::input()`.
+- `parser.input()` calls `state->input()` to [parse the wide character to `Transition`](#parse-wide-character-to-transition).
+- `parser.input()` calls `append_or_delete()` if `tx.next_state` is not NULL.
+- `append_or_delete()` decides whether to push the `Action`:`state->exit()` into `actions`.
+- `parser.input()` calls `append_or_delete()` to push the `Action`:`tx.action` into `actions`.
+- `parser.input()` clears `tx.action`.
+- `parser.input()` calls `append_or_delete()` if `tx.next_state` is not NULL.
+- `append_or_delete()` decides whether to push the `Action`:`tx.next_state->enter()` into `actions`.
+- `parser.input()` updates `state` with `tx.next_state`.
+
+#### Parse wide character to `Transition`
+
+- `state->input()` parses the character into `Transition` via calling `anywhere_rule()`.
+  - `anywhere_rule()` creates `Transition` based on character coding rule.
+- If the created `Transition.next_state` is not empty,
+  - `state->input()` assigns value to `char_present` and `ch` fields of `Transition.action`.
+  - returns early with created `Transition`.
+- `state->input()` parses the character into `Transition` via calling `this->input_state_rule()`.
+  - `this->input_state_rule()` parses high Unicode code-points.
+  - The behaviour of `this->input_state_rule()` depends on the implementation of `State` sub-class.
+  - The default `State` is `Paser:Ground`.
+  - `Ground::input_state_rule()` parses character according to `C0_prime` rule and `GLGR` rule.
+  - `C0_prime` rule returns a `Transition` whose `action` field is `Parser::Execute`.
+  - `GLGR` rule returns a `Transition` whose `action` field is `Parser::Print`.
+  - `Ground::input_state_rule()` returns the second `Transition` whose `action` field is `Parser::Ignore`.
+- `state->input()` assigns value to `char_present` and `ch` fields of the second `Transition.action`.
+- Return with the second created `Transition`.
 
 ### How to read from client connection
 
