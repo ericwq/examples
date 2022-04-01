@@ -323,7 +323,7 @@ In the main loop(while loop), It performs the following steps:
 
 - `terminal.act(string)` aka `Complete::act(string)`.
 - Iterate the string parameter,
-- For each character, call `parser.input()` to parse octet into up to three actions.
+- For each character, call `parser.input()` to [parse octet into up to three actions](#parse-unicode-character-to-action).
   - Iterate the `actions`, for each action,
   - apply action on terminal via calling `act->act_on_terminal()` with the `terminal` as parameter.
 - Clear the `actions` via calling `actions.clear()`.
@@ -334,7 +334,7 @@ In the main loop(while loop), It performs the following steps:
 #### Parse unicode character to action
 
 - The first `parser.input()` is actually `Parser::UTF8Parser::input()`.
-- If ASCII code ( less than "0x7f") and `buf_len` is 0,
+- If ASCII code of character is less than "0x7f" and `buf_len` is 0,
   - call the [second `parser.input()`](#parse-wide-character-according-to-transition) with the `actions` as parameter.
   - `actions` aka `Complete.actions`, a vector of type `Parser::Action`
   - return early.
@@ -359,7 +359,7 @@ In the main loop(while loop), It performs the following steps:
 
 #### Parse wide character to `Transition`
 
-- `state->input()` parses the character into `Transition` via calling `anywhere_rule()`.
+- `state->input()` parses the character into `Transition` via calling [`anywhere_rule()`](#anywhere-rule).
   - `anywhere_rule()` creates `Transition` based on character coding rule.
 - If the created `Transition.next_state` is not empty,
   - `state->input()` assigns value to `char_present` and `ch` fields of `Transition.action`.
@@ -368,12 +368,27 @@ In the main loop(while loop), It performs the following steps:
   - `this->input_state_rule()` parses high Unicode code-points.
   - The behaviour of `this->input_state_rule()` depends on the implementation of `State` sub-class.
   - The default `State` is `Paser:Ground`.
-  - `Ground::input_state_rule()` parses character according to `C0_prime` rule and `GLGR` rule.
+  - `Ground::input_state_rule()` parses character according to [`C0_prime` rule and `GLGR` rule](#c0_prime-and-glgr-rule).
   - `C0_prime` rule returns a `Transition` whose `action` field is `Parser::Execute`.
   - `GLGR` rule returns a `Transition` whose `action` field is `Parser::Print`.
   - `Ground::input_state_rule()` returns the second `Transition` whose `action` field is `Parser::Ignore`.
 - `state->input()` assigns value to `char_present` and `ch` fields of the second `Transition.action`.
 - Return with the second created `Transition`.
+
+#### anywhere rule
+
+- Action = Execute; State = Ground — 0x18, 0x1A, 0x80…8F, 0x91…97, 0x99, 0x9A
+- Action = Ignore; State = Ground — 0x9C
+- Action = Ignore; State = Escape — 0x1B
+- Action = Ignore; State = SOS_PM_APC_String — 0x98, 0x9E, 0x9F
+- Action = Ignore; State = DCS_Entry — 0x90
+- Action = Ignore; State = OSC_String — 0x9D
+- Action = Ignore; State = CSI_Entry — 0x9B
+
+#### C0_prime and GLGR rule
+
+- Action = Ignore; State = CSI_Entry — 0x90, …0x17, 0x1C…1F
+- Action = Ignore; State = Print — 0x19,
 
 ### How to read from client connection
 
