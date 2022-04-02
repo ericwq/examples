@@ -328,6 +328,10 @@ In the main loop(while loop), It performs the following steps:
   - apply action on terminal via calling `act->act_on_terminal()` with the `terminal` as parameter.
 - Clear the `actions` via calling `actions.clear()`.
 - Return `terminal.read_octets_to_host()`.
+  - `read_octets_to_host()` aka `Emulator::read_octets_to_host`.
+  - `read_octets_to_host()` stores the value of `dispatch.terminal_to_host`.
+  - `read_octets_to_host()` clears the value of `dispatch.terminal_to_host`.
+  - `read_octets_to_host()` returns the stored value of `dispatch.terminal_to_host`.
 
 ![mosh-parse.svg](img/mosh-parse.svg)
 
@@ -368,7 +372,7 @@ In the main loop(while loop), It performs the following steps:
   - `this->input_state_rule()` parses high Unicode code-points.
   - The behaviour of `this->input_state_rule()` depends on the implementation of `State` sub-class.
   - The default `State` is `Paser:Ground`.
-  - `Ground::input_state_rule()` parses character according to [`C0_prime` rule and `GLGR` rule](#c0_prime-and-glgr-rule).
+  - `Ground::input_state_rule()` parses character according to [`C0_prime` rule](#c0_prime-rule) and [`GLGR` rule](#glgr-rule).
   - `C0_prime` rule returns a `Transition` whose `action` field is `Parser::Execute`.
   - `GLGR` rule returns a `Transition` whose `action` field is `Parser::Print`.
   - `Ground::input_state_rule()` returns the second `Transition` whose `action` field is `Parser::Ignore`.
@@ -377,18 +381,25 @@ In the main loop(while loop), It performs the following steps:
 
 #### anywhere rule
 
-- Action = Execute; State = Ground — 0x18, 0x1A, 0x80…8F, 0x91…97, 0x99, 0x9A
-- Action = Ignore; State = Ground — 0x9C
-- Action = Ignore; State = Escape — 0x1B
-- Action = Ignore; State = SOS_PM_APC_String — 0x98, 0x9E, 0x9F
-- Action = Ignore; State = DCS_Entry — 0x90
-- Action = Ignore; State = OSC_String — 0x9D
-- Action = Ignore; State = CSI_Entry — 0x9B
+- Action = Execute; State = Ground - "0x18, 0x1A, 0x80…8F, 0x91…97, 0x99, 0x9A"
+- Action = Ignore; State = Ground - "0x9C"
+- Action = Ignore; State = Escape - "0x1B"
+- Action = Ignore; State = SOS_PM_APC_String - "0x98, 0x9E, 0x9F"
+- Action = Ignore; State = DCS_Entry - "0x90"
+- Action = Ignore; State = OSC_String - "0x9D"
+- Action = Ignore; State = CSI_Entry - "0x9B"
+- See [List of Unicode characters](https://en.wikipedia.org/wiki/List_of_Unicode_characters)
+- See [ANSI escape code in wikipedia](https://en.wikipedia.org/wiki/ANSI_escape_code)
 
-#### C0_prime and GLGR rule
+#### C0_prime rule
 
-- Action = Ignore; State = CSI_Entry — 0x90, …0x17, 0x1C…1F
-- Action = Ignore; State = Print — 0x19,
+- Action = Ignore; State = Execute — "0x19, 0x00…17, 0x1C…1F"
+- See [XTerm Control Sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
+
+#### GLGR rule
+
+- Action = Ignore; State = Print — "0x20…0x7F, 0xA0…FF",
+- See [XTerm Control Sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
 
 ### How to read from client connection
 
