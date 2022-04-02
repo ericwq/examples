@@ -208,14 +208,31 @@ In the main loop(while loop), It performs the following steps:
 - Upon network sockets is ready to read, read it with [`network.recv()`](client.md#how-to-receive-network-input).
   - After `network.recv()`, the remote state is saved in `received_states`,
   - and the opposite direction `ack_num` is saved.
-  - [forward input to terminal](#how-to-forward-input-to-terminal) if remote state number is not equal to `last_remote_num`.
+  - if remote state number is not equal to `last_remote_num`, [prepare input for terminal](#how-to-prepare-input-for-terminal).
 - Upon pty master input is ready to read, read it via calling `read()` system call.
   - If it does read some input, call [`terminal.act()`](#terminalactstring) to process the input data.
   - append the return value of `terminal.act()` to `terminal_to_host`.
-  - set currrent state via calling `network.set_current_state()` with the `terminal` as parameter.
-- `swrite` TODO
+  - set current state via calling `network.set_current_state()` with the `terminal` as parameter.
+- Write user input and terminal writeback to the host via calling `swrite()`.
+  - All data collected in `terminal_to_host` is write to the pty master.
+- If server doesn't receive client data over `network_timeout_ms`, set `idle_shutdown` true.
+- Upon receive `SIGUSR1` signal, check `network_signaled_timeout_ms` to decide how to set `idle_shutdown`.
+  - `SIGUSR1` signal is used to kill the mosh-server gracefully.
+- If `idle_shutdown` is true or receive any signal, prepare to shutdown.
+- Quit if our shutdown has been acknowledged.
+- Quit after shutdown acknowledgement timeout.
+- Quit if we received and acknowledged a shutdown request.
+- Update utmp if has been more than 30 seconds since heard from client.
+- Check the echo condition and decide whether to echo ack via calling `terminal.set_echo_ack()`.
+  - `terminal.set_echo_ack()` aka `Complete::set_echo_ack()`
+  - `terminal.set_echo_ack()` checks `input_history` time against `now` and `ECHO_TIMEOUT`.
+  - `terminal.set_echo_ack()` updates `input_history` and `echo_ack`.
+  - If `terminal.set_echo_ack()` returns true,
+  - set current state via calling `network.set_current_state()` with the `terminal` as parameter.
+- Quit if there is no connection within 60 seconds.
+- Perform `network->tick()` to synchronizes the data to the client.
 
-#### How to forward input to terminal
+#### How to prepare input for terminal
 
 - Update `last_remote_num` with the latest one.
 - Initialize a empty `UserStream` object: `us`.
