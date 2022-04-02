@@ -280,7 +280,6 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 #### How does the network tick
 
-- `STMClient::main` calls `network->tick()` in the main loop to procee the data in current state.
 - `network->tick()` calls `sender.tick()` to send data or an ack if necessary.
 - `sender.tick()` aka `TransportSender<MyState>::tick()`
 - `sender.tick()` calls `calculate_timers()` to calculate next send and ack times.
@@ -288,20 +287,24 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - `calculate_timers()` calls [`update_assumed_receiver_state()`](#how-to-pick-the-reciver-state) to update assumed receiver state.
   - `calculate_timers()` calls [`rationalize_states()`](#how-to-rationalize-states) cut out common prefix of all states.
   - `calculate_timers()` calculate `next_send_time` and `next_ack_time`.
-- `sender.tick()` calls `diff_from()` to compare `current_state` with `assumed_receiver_state` to [calculate diff](#how-to-calculate-the-diff-for-userstream).
+- `sender.tick()` makes sure it's time to send data to the receiver.
+- `sender.tick()` compares `current_state` with `assumed_receiver_state` to calculate difference string
+  - For `UserStream` state: see [How to calculate the diff for UserStream](#how-to-calculate-the-diff-for-userstream).
+  - For `Complete` state: see [How to calculate the diff for Complete](#how-to-calculate-the-diff-for-complete).
 - `sender.tick()` calls `attempt_prospective_resend_optimization()` to optimize diff.
 - If `diff` is empty and if it's greater than the `next_ack_time`.
-  - `sender.tick()` calls [`send_empty_ack()`](#how-to-send-empty-ack) to send ack.
+  - `sender.tick()` calls [`send_empty_ack()`](#how-to-send-empty-ack) to send empty ack.
 - If `diff` is not empty and if it's greater than `next_send_time` or `next_ack_time`.
   - `sender.tick()` calls [`send_to_receiver()`](#how-to-send-to-receiver) to send diffs.
 
 #### How to send empty ack
 
 - `send_empty_ack()` aka `TransportSender<MyState>::send_empty_ack()`.
-- `send_empty_ack()` gets the last state number via `sent_states.back()` and increases one.
+- `send_empty_ack()` gets the last state number from `sent_states.back()` and increases it one.
 - `send_empty_ack()` calls `add_sent_state()` to push `current_state` into `sent_states`,
   - with the new state number and current time as parameters.
-  - limit the size of `sent_states` below 32.
+  - `add_sent_state()` limits the size of `sent_states` below 32.
+  - `add_sent_state()` limits the size of `sent_states` by erasing state from middle of `send_states` queue.
 - `send_empty_ack()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send the new state
   - with empty string as `diff` parameter.
 
@@ -313,69 +316,100 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - If `current_state` number is not equal to `sent_states.back()` number, increase the state number.
 - `send_to_receiver()` calls `add_sent_state()` to push `current_state` into `sent_states`,
   - with the new state number and current time as parameters.
-  - limit the size of `sent_states` below 32.
+  - `add_sent_state()` limits the size of `sent_states` below 32.
+  - `add_sent_state()` limits the size of `sent_states` by erasing state from middle of `send_states` queue.
 - Note `sent_states` is type of list `TimestampedState`, while `current_state` is type of `MyState`.
 - `send_to_receiver()` calls [`send_in_fragments()`](#how-to-send-data-in-fragments) to send data.
 - `send_to_receiver()` updates `assumed_receiver_state`, `next_ack_time` and `next_send_time`.
 
 #### How to calculate the diff for UserStream
 
-- `current_state.diff_from()` aka `UserStream::diff_from()`, who calculate diff based on user keystrokes.
-- `diff_from()` compares current `UserStream` with `existing` `UserStream` to calculate the diff.
-- `diff_from()` finds the position in the current `UserStream` which is different from `existing` `UserStream`.
-- `diff_from()` iterates to the end of current `UserStream` starting from the above position.
+- `diff_from()` aka `UserStream::diff_from()`, which calculates diff based on user keystrokes.
+- `diff_from()` has a existing `UserStream` as parameter.
+- `diff_from()` compares current `UserStream` with existing `UserStream` to calculate the diff.
+- `diff_from()` finds the position in the current `UserStream` which is different from existing `UserStream`.
+- `diff_from()` iterates to the end of current `UserStream`, starting from the above position.
 - `diff_from()` build `ClientBuffers::UserMessage`, with the `UserEvent` object in each iteration,
-- `diff_from()` returns the serialized string of the `ClientBuffers::UserMessage` object.
+- `diff_from()` returns the serialized string representation of the `ClientBuffers::UserMessage` object.
 - `ClientBuffers::UserMessage` is a proto2 message. See userinput.proto file.
 - `ClientBuffers::UserMessage` contains several `ClientBuffers.Instruction`.
 - `ClientBuffers.Instruction` is composed of `Keystroke` or `ResizeMessage`.
 - Several `Keystroke` can be appended to one `ClientBuffers.Instruction`.
 - `ResizeMessage` is added to one `ClientBuffers.Instruction`.
 
+#### How to calculate the diff for Complete
+
+- `diff_from()` aka `Complete::diff_from()`.
+- `diff_from()` has a existing `Complete` as parameter.
+- `diff_from()` compares current `echo_ack` with existing one.
+- If they are different, `diff_from()` adds `EchoAck` intruction with current `echo_ack` as parameter.
+- `diff_from()` compares current `Framebuffer` with existing one.
+- If they are different, `diff_from()` compares the `Framebuffer` size.
+  - If the `Framebuffer` size is different,
+    - `diff_from()` adds `ResizeMessage` instruction with current size as parameter.
+  - `diff_from()` calls `display.new_frame()` to [calculate the `Framebuffer` diff](#how-to-calculate-frame-buffer-difference).
+  - If `Framebuffer` diff is not empty,
+    - `diff_from()` adds `HostBytes` instruction with the diff as parameter.
+- `diff_from()` returns the serialized string representation of the `HostBuffers::HostMessage` obejct.
+- `HostBuffers::HostMessage` is a proto2 message. See hostinput.proto file.
+- `HostBuffers::HostMessage` contains several `HostBuffers::Instruction`.
+- `HostBuffers::Instruction` is composed of `HostBytes`, `ResizeMessage`, `EchoAck`.
+
 #### How to pick the reciver state
 
-- `update_assumed_receiver_state()` chooses a most recent receiver state based on network traffic.
-- `update_assumed_receiver_state()` picks the first item in `send_state`.
+- `update_assumed_receiver_state()` chooses the most recent receiver state based on network traffic.
+- `update_assumed_receiver_state()` picks the first item in `send_states`.
 - `send_state` is type of `list<TimestampedState<MyState>>`.
+- `assumed_receiver_state` point to the middle of `sent_states`.
 - `send_state` skips the first item.
-- For each item in `send_state`, if the time gap is lower than `connection->timeout()`. Update `assumed_receiver_state`.
+- For each item in `send_states`,
+  - If the time gap for each state is lower than `connection->timeout() + ACK_DELAY`, `ACK_DELAY` is 100ms,
+  - updates `assumed_receiver_state` to current item.
   - `connection->timeout()` aka `Connection::timeout()`.
   - `connection->timeout()` calcuates [RTO](https://datatracker.ietf.org/doc/html/rfc2988) based on `SRTT` and `RTTVAR`.
+  - If the time gap for each state `now - i->timestamp` is greater than `connection->timeout() + ACK_DELAY`,
+  - returns early.
 - The result is saved in `assumed_receiver_state`.
-- `assumed_receiver_state` point to the middle of `sent_states`.
 
 #### How to rationalize states
 
 - `rationalize_states()` aka `TransportSender<MyState>::rationalize_states()`.
 - `rationalize_states()` picks the first state from `sent_states` as common prefix.
+  - The comm prefix is the first state in `send_states`.
   - `sent_states` is type of `list<TimestampedState<MyStat>>`.
-- The comm prefix is the first state in `send_state`.
 - `rationalize_states()` calls `current_state.subtract()` to cut out common prefix from `current_state`.
-- `rationalize_states()` calls `i->state.subtract()` to cut out common prefix for all states in `sent_states`.
-  - For client side:
-  - `subtract()` aka `UserStream::subtract()`.
-  - `subtract()` cuts out any `UserEvent` from 's `actions` deque, if it's the same `UserEvent` in `prefix`.
-  - The result is the caller of `subtract()` cut out common prefix.
-- The result is that the common prefix in `current_state` and `sent_states` is cut out.
+- `rationalize_states()` iterates through `send_states`.
+  - For each state,
+  - `rationalize_states()` calls `i->state.subtract()` to cut out common prefix from current state.
+  - In case `MyState` is `UserStream`:
+    - `subtract()` aka `UserStream::subtract()`.
+    - `subtract()` cuts out any `UserEvent` from its `actions` deque, if it's the same `UserEvent` in `prefix`.
+    - The result is the common prefix in `current_state` and early `sent_states` is cut out.
+  - In case `MyState` is `Complete`:
+    - `subtract()` aka `Complete:subtract()`.
+    - `subtract()` does nothing.
 
 #### How to send data in fragments
 
 - `send_in_fragments()` aka `TransportSender<MyState>::send_in_fragments()`.
-- `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in [previous](#how-to-calculate-the-diff-for-userstream) step.
+- `send_in_fragments()` creates `TransportBuffers.Instruction` with the `diff` created in previous step.
+  - See [How to calculate the diff for UserStream](#how-to-calculate-the-diff-for-userstream).
+  - See [How to calculate the diff for Complete](#how-to-calculate-the-diff-for-complete).
 - `TransportBuffers.Instruction` contains the following fields.
-  - `old_num` field is the source number. It's value is `assumed_receiver_state->num`.
-  - `new_num` field is the target number. It's value is specified by `new_num` parameter.
-  - `throwaway_num` field is the throwaway number. It's value is `sent_states.front().num`.
-  - `diff` field contains the `diff`. It's value is specified by `diff` parameter.
-  - `ack_num` field is the ack number. It's value is assigned by `ack_num`.
+  - `old_num` : is the source number. It's value is `assumed_receiver_state->num`.
+  - `new_num` : is the target number. It's value is specified by `new_num` parameter.
+  - `throwaway_num` : is the throwaway number. It's value is `sent_states.front().num`.
+  - `diff` : contains the `diff`. It's value is specified by `diff` parameter.
+  - `ack_num` : is the ack number. It's value is assigned by `ack_num`.
 - `send_in_fragments()` calls `Fragmenter::make_fragments` to splits the `TransportBuffers.Instruction` into `Fragment`.
   - `make_fragments()` serializes `TransportBuffers.Instruction` into string and compresses it to string `payload`.
   - `make_fragments()` splits the `payload` string into fragments based on the size of `MTU`,
   - The default size of `MTU` is 1280.
-  - Fragment has a `id` field, which is the instruction id. It's the same id for all the fragment.
-  - Fragment has a `fragment_num` field, which starts from zero, and is increased one for each new fragment.
-  - Fragment has a `final` field, which is used to indicate the last fragment.
-  - Fragment has a `contents` field, which contains part of the instruction.
+- `Fragment` has the following fields:
+  - `id` : which is the instruction id. It's the same id for all the fragment.
+  - `fragment_num` : which starts from zero, and is increased one for each new fragment.
+  - `final` : which is used to indicate the last fragment.
+  - `contents` : which contains part of the instruction.
   - The fragments is saved in `Fragment` vector.
 - `send_in_fragments()` calls [`connection->send()`](#how-to-send-a-packet) to send each `Fragment` to the server.
 
@@ -383,15 +417,18 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - `connection->send()` aka `Connection::send()`.
 - `connection->send()` calls `new_packet()` to create a `Packet`.
-  - `timestamp_reply` means?
   - `Packet` is type of `Network::Packet`.
   - Besides the `payload` field,
   - A `Packet` also contains a unique `seq` field, a `timestamp` field and a `timestamp_reply` field.
+  - See [more about `Packet`](#networkfragment---networkpacket---cryptomessage)
 - `connection->send()` calls `session.encrypt()` to encrypt the `Packet`.
 - `connection->send()` calls `sendto()` system call to send the encrypted data to receiver.
   - `sendto()` use the last socket from socket list to send the encrypted data.
 - `connection->send()` checks the time gap between now and `last_port_choice`, `last_roundtrip_success`.
-- `connection->send()` calls [`hop_port()`](#how-does-the-client-roam), if the time gap is greater than `PORT_HOP_INTERVAL`.
+- For client, [`hop_port()`](#how-does-the-client-roam) is called to roam the client,
+  - if the time gap is greater than `PORT_HOP_INTERVAL`.
+- For server, `last_heard` is checked to make sure after 40 seconds, `has_remote_addr` is false.
+  - `has_remote_addr` is false meaning no more send.
 
 #### How does the client roam.
 

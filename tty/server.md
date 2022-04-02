@@ -230,7 +230,7 @@ In the main loop(while loop), It performs the following steps:
   - If `terminal.set_echo_ack()` returns true,
   - set current state via calling `network.set_current_state()` with the `terminal` as parameter.
 - Quit if there is no connection within 60 seconds.
-- Perform `network->tick()` to synchronizes the data to the client.
+- Perform [`network->tick()`](client.md#how-does-the-network-tick) to synchronizes the data to the client.
 
 #### How to prepare input for terminal
 
