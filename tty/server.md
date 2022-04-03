@@ -215,6 +215,7 @@ In the main loop(while loop), It performs the following steps:
   - set current state via calling `network.set_current_state()` with the `terminal` as parameter.
 - Write user input and terminal writeback to the host via calling `swrite()`.
   - All data collected in `terminal_to_host` is write to the pty master.
+  - TODO : why the terminal writeback?
 - If server doesn't receive client data over `network_timeout_ms`, set `idle_shutdown` true.
 - Upon receive `SIGUSR1` signal, check `network_signaled_timeout_ms` to decide how to set `idle_shutdown`.
   - `SIGUSR1` signal is used to kill the mosh-server gracefully.
@@ -431,7 +432,7 @@ For `Complete`:
 #### GLGR rule
 
 - Action = Ignore; State = Print — "0x20…0x7F, 0xA0…FF",
-- See [XTerm Control Sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
+- TODO : See [XTerm Control Sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
 
 ### How to read from client connection
 

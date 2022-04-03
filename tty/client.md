@@ -31,8 +31,6 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - [STMClient::main](#stmclientmain)
 - [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
 
-<!-- TODO what the purpose of `overlay`. -->
-
 ### STMClient constructor
 
 - `STMClient()` is called withe following parameters:`ip`,`port`,`key`,`predict_mode`,`verbose` parameter.
@@ -141,6 +139,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
 - `new_state` is of type `Terminal::Framebuffer`.
 - `output_new_frame()` calls `overlays.apply()` to apply `new_state` to local overlays.
+- TODO : how does the overlay works?
 - `output_new_frame()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to calculate minimal `diff` from where we are.
 - `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
 - `output_new_frame()` sets `repaint_requested` to true.
@@ -225,7 +224,8 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `new_frame()` extends rows if we've gotten a resize and new is wider than old.
 - `new_frame()` adds rows if we've gotten a resize and new is taller than old.
 - `new_frame()` checks if display moved up by a certain number of lines
-- `new_frame()` updates the display, row by row, via calling `put_row()` for each row. TODO detail of `put_row()`.
+- `new_frame()` updates the display, row by row, via calling `put_row()` for each row.
+- TODO : the detail of `put_row()`.
 - `new_frame()` checks if cursor location changed, append escape sequence to `frame`.
 - `new_frame()` checks if cursor visibility changed, append escape sequence to `frame`.
 - `new_frame()` checks if renditions changed: if true, append escape sequence to `frame`.
@@ -260,7 +260,8 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `process_user_input()` calls `read()` system call to read the user keystrokes.
 - `process_user_input()` calls `overlays.get_prediction_engine().set_local_frame_sent()` to save the last `send_states` number.
 - `process_user_input()` check each input character:
-- `process_user_input()` calls `overlays.get_prediction_engine().new_user_byte()` to TODO.
+- `process_user_input()` calls `overlays.get_prediction_engine().new_user_byte()` to
+- TODO : how does the prediction engine works.
 - If it get the `LF`, `CR` character, set `repaint_requested` to be true.
 - For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
   - `network->get_current_state()` is actually `TransportSender.get_current_state()`.
@@ -522,6 +523,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `recv_one()` aka `Connection::recv_one()`
 - `recv_one()` calls `recvmsg()` system call to receive data from socket.
 - `recv_one()` checks congestion flag, if so, set `congestion_experienced` to true.
+- TODO : congestion flag? P390, P588, P612.
 - `recv_one()` calls `session.decrypt()` to decrypt the received data and transform it into `Message`.
 - `recv_one()` creates a `Packet` object based on the `Message`.
 - `recv_one()` checks `Packet`'s sequence number to make sure it is greater than the `expected_receiver_seq`.
