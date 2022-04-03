@@ -249,7 +249,7 @@ In the main loop(while loop), It performs the following steps:
     - get the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCGWINSZ` flag,
     - set the window size for `STDIN_FILENO` , via `ioctl()` and `TIOCSWINSZ` flag.
   - For other action:
-    - call [`terminal.act()`](#terminalact) to get the transcript character.
+    - call [`Action` version of `terminal.act()`](#terminalact) to get the transcript character.
     - append the transcript character to `terminal_to_host`.
 - If `us` is not empty,
   - register input frame number for future echo ack via calling `terminal.register_input_frame()`.
@@ -334,7 +334,9 @@ For `Complete`:
     - `emu->user.input()` sets state to `Ground` and return `ESC [ [A-D]` string.
   - If state is `SS3` and character isn't `A-D` and `application_mode_cursor_keys` is true,
     - `emu->user.input()` sets state to `Ground` and return `ESC O [A-D]` string.
-- `act_on_terminal()` calls `emu->dispatch.terminal_to_host.append()` to append the above string to terminal `dispatch.terminal_to_host`.
+  - See [PC-Style Function Keys](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-PC-Style-Function-Keys) for application cursor mode.
+- `act_on_terminal()` appends the above string to terminal `dispatch.terminal_to_host`.
+  - via calling `emu->dispatch.terminal_to_host.append()` to
 - `act_on_terminal()` returns void.
 
 #### Resize::act_on_terminal
@@ -432,7 +434,7 @@ For `Complete`:
 #### GLGR rule
 
 - Action = Ignore; State = Print — "0x20…0x7F, 0xA0…FF",
-- TODO : See [XTerm Control Sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
+- See [XTerm Control Sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
 
 ### How to read from client connection
 

@@ -94,7 +94,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 
 - `display.open()` aka `Display::open()`.
 - `display.open()` returns a control sequence to set the application-cursor-key mode.
-- Application Cursor Keys mode is a way for the server to change the control sequences sent by the arrow keys.
+- [Application Cursor Keys mode](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-PC-Style-Function-Keys) is a way for the server to change the control sequences sent by the arrow keys.
 - In normal mode, the arrow keys send `ESC [A` through to `ESC [D`.
 - In application mode, they send `ESC OA` through to `ESC OD`.
 
