@@ -120,6 +120,7 @@ In the `main` function: `run_server` is the core to start `mosh` server.
 - `connection(desired_ip, desired_port)` is called to create the connection with server.
 - `connection()` is the constructor of `Network::Connection`
 - `connection()` initializes a empty deque of `Socket`: `socks`.
+<!-- Concurrent UDP Server at Unix Network Programming: The Socket Networking API? P612 -->
 - `connection()` initializes `has_remote_addr` to true.
 - `connection()` initializes the `key`, which is type of `Base64Key`
   - `Base64Key` reads 16 bytes from `/dev/urandom` as the `key`.

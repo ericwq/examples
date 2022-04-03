@@ -523,7 +523,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `recv_one()` aka `Connection::recv_one()`
 - `recv_one()` calls `recvmsg()` system call to receive data from socket.
 - `recv_one()` checks congestion flag, if so, set `congestion_experienced` to true.
-- TODO : congestion flag? P390, P588, P612.
+<!-- congestion flag at Unix Network Programming: The Socket Networking API? P390, P588, check Connection::Socket::Socket()-->
 - `recv_one()` calls `session.decrypt()` to decrypt the received data and transform it into `Message`.
 - `recv_one()` creates a `Packet` object based on the `Message`.
 - `recv_one()` checks `Packet`'s sequence number to make sure it is greater than the `expected_receiver_seq`.
