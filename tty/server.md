@@ -210,7 +210,7 @@ In the main loop(while loop), It performs the following steps:
   - and the opposite direction `ack_num` is saved.
   - if remote state number is not equal to `last_remote_num`, [prepare input for terminal](#how-to-prepare-input-for-terminal).
 - Upon pty master input is ready to read, read it via calling `read()` system call.
-  - If it does read some input, call [`terminal.act()`](#terminalactstring) to process the input data.
+  - If it does read some input, call [string version of `terminal.act()`](#terminalactstring) to process the input data.
   - append the return value of `terminal.act()` to `terminal_to_host`.
   - set current state via calling `network.set_current_state()` with the `terminal` as parameter.
 - Write user input and terminal writeback to the host via calling `swrite()`.
@@ -275,24 +275,38 @@ In the main loop(while loop), It performs the following steps:
   - `get_remote_diff()` sets the `oldest_receiver_state` with the value of the oldest `received_states`.
   - `get_remote_diff()` iterates through the `received_states` list in reverse order (newest to oldest).
   - `oldest_receiver_state` is the target to be evluated for each iteration.
-  - For eache iterating state, calls `UserStream::subtract()` to subtract shared `UserEvent`.
+  - For each iterating state, calls `UserStream::subtract()` to subtract shared `UserEvent`.
   - `get_remote_diff()` stores the newest `received_states` in `last_receiver_state`.
 - `get_remote_diff()` returns the difference string representation of `ClientBuffers::UserMessage`.
 
 #### apply_string
 
+For `UserStream`:
+
 - `apply_string()` aka `UserStream::apply_string()`.
 - `apply_string()` creates a `ClientBuffers::UserMessage` object.
 - `apply_string()` parses string representation of `ClientBuffers::UserMessage`.
 - `apply_string()` iterates through `ClientBuffers::UserMessage` object.
-- `apply_string()` extracts `UserByte` or `Resize` from `ClientBuffers::UserMessage`.
-- `apply_string()` wraps `UserByte` or `Resize` in `UserEvent` and pushes `UserEvent` into `UserStream`.
-- For each iteration, `apply_string()` builds `UserEvent` and pushes it into `UserStream.actions`.
+- For each iteration, `apply_string()` builds and pushes `UserEvent` into `UserStream.actions`.
+  - `apply_string()` extracts `UserByte` or `Resize` from `ClientBuffers::UserMessage`.
+  - `apply_string()` wraps `UserByte` or `Resize` in `UserEvent`.
 - That means `apply_string()` initializes `UserStream` with `ClientBuffers::UserMessage`.
+
+For `Complete`:
+
+- `apply_string()` aka `Complete::apply_string`.
+- `apply_string()` creates a `HostBuffers::HostMessage` object.
+- `apply_string()` parses string representation of `HostBuffers::HostMessage`.
+- `apply_string()` iterates through `HostBuffers::HostMessage` object.
+- For each iteration, `apply_string()` checks the instruction extension:
+  - If the extension is `HostBytes`, `apply_string()` calls [string version of `act()`](#terminalactstring) to change the terminal.
+  - if the extension is `ResizeMessage`, `apply_string()` calls [`Action` version of `act()`](#terminalact) to change the terminal.
+  - if the extension is `EchoAck`, `apply_string()` extracts `echo_ack_num` and set it in `echo_ack` field.
 
 #### terminal.act
 
 - `terminal.act()` aka `Complete::act()`.
+- `terminal.act()` has a `Action` as parameter.
 - `terminal.act()` apply action to terminal via calling `act->act_on_terminal()` with the `terminal` as parameter.
   - For `UserByte` action, [`UserByte::act_on_terminal`](#userbyteact_on_terminal) will store the transcript character to `dispatch.terminal_to_host`.
   - For `Resize` action, [`Resize::act_on_terminal`](#resizeact_on_terminal) will change the terminal frame buffer size.
@@ -339,6 +353,7 @@ In the main loop(while loop), It performs the following steps:
 #### terminal.act(string)
 
 - `terminal.act(string)` aka `Complete::act(string)`.
+- `terminal.act(string)` has a string as parameter.
 - Iterate the string parameter,
 - For each character, call `parser.input()` to [parse octet into up to three actions](#parse-unicode-character-to-action).
   - Iterate the `actions`, for each action,

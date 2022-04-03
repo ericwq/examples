@@ -38,7 +38,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - `STMClient()` is called withe following parameters:`ip`,`port`,`key`,`predict_mode`,`verbose` parameter.
 - `STMClient()` saves `key`, `ip`, `port` parameters as field member.
 - `STMClient()` initializes `escape_key`, `escape_pass_key`, `escape_pass_key2`,
-  - with `0x1E`, `^`, `^` corresponding value.
+  - with "0x1E", "^", "^" corresponding value.
 - `STMClient()` initializes `escape_requires_lf` with false value.
 - `STMClient()` initializes empty `termios` structs: `raw_termios`, `saved_termios`.
 - `STMClient()` initializes `new_state` frame buffer with 1\*1 size.
@@ -449,7 +449,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 #### How to receive network input
 
 - `network->recv()` aka `Transport<MyState, RemoteState>::recv()`
-- `network->recv()` calls `connection.recv()` to [receive payload](#how-to-read-data-from-socket) string.
+- `network->recv()` calls `connection.recv()` to [receive payload string](#how-to-read-data-from-socket).
 - `network->recv()` calls `Fragment(const string& x)` to [build a `Fragment` object](#how-to-create-the-frament-from-string) from the payload string.
 - `network->recv()` calls `fragments.add_fragment()` to [get the complete packet](#how-to-get-the-complete-packet).
 - `network->recv()` calls `fragments.get_assembly()` to [build the `Instruction` object](#how-to-build-instruction-from-fragments).
@@ -466,10 +466,10 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `network->recv()` limits the `received_states` queue size via drop the received state:
   - If `received_states.size() < 1024` and current time is less than `receiver_quench_timer`.
   - The value of `receiver_quench_timer` is `now` plus 15000ms.
-- If `Instruction` diff field is not empty, `network->recv()` calls [`new_state.state.apply_string()`](server.md#apply_string).
-  - `apply_string()` is called with `Instruction` diff field as parameter.
-  - `apply_string()` initializes `RemoteState` with `ClientBuffers::UserMessage`.
 - `network->recv()` initializes a `RemoteState` and wraps it in `TimestampedState<RemoteState>`.
+- If `Instruction` diff field is not empty, `network->recv()` calls `new_state.state.apply_string()`.
+  - [`apply_string()`](server.md#apply_string) is called with `Instruction` diff field as parameter.
+  - [`apply_string()`](server.md#apply_string) initializes `RemoteState` with remote data.
 - If out-of-order state is received, `network->recv()` inserts new state and returns directly,
 - `network->recv()` calls `received_states.push_back()` to store the new state.
 - `network->recv()` calls `sender.set_ack_num()` to set `ack_num`.
@@ -498,7 +498,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - From the `Fragment::tostring()`, the format of the network fragment data is:
   - The `id` field, which is `uint64_t`, contains the fragment id.
-  - The `fragment_num` field, which is `uint16_t`, contains the fragment number and fragment final flag.
+  - The `fragment_num` field, which is `uint16_t`, contains the fragment number and fragment `final` flag.
   - The `contents` field, which is `string`, contains the fragment payload.
 - `Fragment(const string& x)` constructs the `Fragment` using the above format.
 - `Fragment(const string& x)` returns one `Fragment`.
@@ -521,18 +521,19 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 - `recv_one()` aka `Connection::recv_one()`
 - `recv_one()` calls `recvmsg()` system call to receive data from socket.
-- `recv_one()` calls `session.decrypt()` to decrypt the received message.
-- `recv_one()` creates a `Packet` object based on the decrypted data.
+- `recv_one()` checks congestion flag, if so, set `congestion_experienced` to true.
+- `recv_one()` calls `session.decrypt()` to decrypt the received data and transform it into `Message`.
+- `recv_one()` creates a `Packet` object based on the `Message`.
 - `recv_one()` checks `Packet`'s sequence number to make sure it is greater than the `expected_receiver_seq`.
   - if packet sequence number is greater than `expected_receiver_seq`,
-    - `recv_one()` increases `expected_receiver_seq`.
-    - `recv_one()` saves the `p.timestamp` in `saved_timestamp`, saves the time in `saved_timestamp_received_at`.
-    - `recv_one()` signals counterparty to slow down via decrease `saved_timestamp`, if congestion is detected.
-    - `recv_one()` calculates `SRTT` and `RTTVAR` based on each [RTT](https://datatracker.ietf.org/doc/html/rfc29880).
-    - `recv_one()` updates `last_heard` with current time.
+  - `recv_one()` increases `expected_receiver_seq`.
+  - `recv_one()` saves the `p.timestamp` in `saved_timestamp`, saves current time in `saved_timestamp_received_at`.
+  - `recv_one()` signals counterparty to slow down via decrease `saved_timestamp`, if congestion is detected.
+  - `recv_one()` calculates `SRTT` and `RTTVAR` based on each [RTT](https://datatracker.ietf.org/doc/html/rfc29880).
+  - `recv_one()` updates `last_heard` with current time.
   - For server side, [client roaming](#how-does-the-server-support-client-roam) is supported here.
-  - if packet sequence number is less than `expected_receiver_seq`
-    - `recv_one()` return out-of-order or duplicated packets to caller, .
+  - if packet sequence number is less than `expected_receiver_seq`,
+  - `recv_one()` return out-of-order or duplicated packets to caller.
 - `recv_one()` return the `payload` to caller.
 
 #### How does the server support client roam
@@ -542,6 +543,8 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `recv_one()` calls `getnameinfo()` to validate the new remote address.
 
 ### How to send keystroke to remote server
+
+This section summarizes the data structures in the process.
 
 #### user keystroke -> `Parser::UserByte` -> `Network::UserEvent` -> `Network::UserStream`
 
