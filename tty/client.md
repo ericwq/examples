@@ -64,6 +64,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 - `STMClient()` initializes a NULL `network`.
 - `STMClient()` initializes `display`, which is type of [`Terminal::Display`](#terminaldisplay).
 - `STMClient()` initializes `repaint_requested`, `lf_entered`, `quit_sequence_started`, `clean_shutdown` with false value.
+- `STMClient()` initializes `display_preference` in prediction engine with the value from `predict_mode` parameter.
 
 #### Overlay::OverlayManager
 
@@ -157,12 +158,82 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `output_new_frame()` aka `STMClient::output_new_frame()`.
 - `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
 - `new_state` is of type `Terminal::Framebuffer`.
-- `output_new_frame()` calls `overlays.apply()` to apply `new_state` to local overlays.
-- TODO : how does the overlay works?
+- `output_new_frame()` calls `overlays.apply()` to [apply to local overlays](#overlaysapply) with `new_state` as parameter.
 - `output_new_frame()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to calculate minimal `diff` from where we are.
 - `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
 - `output_new_frame()` sets `repaint_requested` to true.
 - `output_new_frame()` sets `local_framebuffer` to the new state.
+
+#### overlays.apply
+
+- `overlays.apply()` aka `OverlayManager::apply()`
+- `overlays.apply()` calls `predictions.cull()` to do ?
+- `overlays.apply()` calls `predictions.apply()` to do ?
+- `overlays.apply()` calls `notifications.adjust_message()` to do ?
+- `overlays.apply()` calls `notifications.apply()` to do ?
+- `overlays.apply()` calls `title.apply()` to do ?
+- TODO : how does the overlay works?
+
+#### cull
+
+- `cull()` aka `PredictionEngine::cull()`.
+- Return early if `display_preference == Never`.
+- Control `srtt_trigger` with hysteresis: `send_interval > SRTT_TRIGGER_HIGH`.
+  - If `send_interval <= SRTT_TRIGGER_LOW` and `srtt_trigger` is ture and `active()` returns false.
+    - `active()` aka `PredictionEngine::active()`.
+    - `active()` iterates through each cell in `overlays`.
+    - `active()` true if any cell is active.
+  - If so, sets `srtt_trigger` false.
+- Control underlining with hysteresis: `send_interval > FLAG_TRIGGER_HIGH`.
+- Really big glitches also activate underlining: `glitch_trigger > GLITCH_REPAIR_COUNT`.
+- Iterate through each row in `overlays`, which is type of `list<ConditionalOverlayRow>`.
+  - Erase current row if `i->row_num < 0` or `i->row_num >= fb.ds.get_height()`, continue the next row.
+  - Iterate through each cell in the row.
+  - [Check cell validity](#get_validity-for-cell) via calling `get_validity()`,
+  - In case `IncorrectOrExpired`,
+    - If cell tentative time is greater than engine's `confirmed_epoch`,
+      - Reset the cell, if `display_preference == Experimental`, otherwise `kill_epoch()`. TODO
+      - Continue the iteration.
+    - If not, Reset the cell, if `display_preference == Experimental`, otherwise reset engine and return. TODO
+  - In case `Correct`,
+    - If cell tentative time is greater than engine's `confirmed_epoch`, update `confirmed_epoch`.
+    - When predictions come in quickly, slowly take away the glitch trigger.
+    - Match rest of row to the actual renditions.
+  - In case `CorrectNoCredit`, reset the cell.
+  - In case `Pending`, When a prediction takes a long time to be confirmed,
+    - we activate the predictions even if SRTT is low.
+  - Continue the next row.
+- If `cursors` is not empty and the [cursor validity](#get_validity-for-cursormove) is `IncorrectOrExpired`,
+- Clear `cursors` if `display_preference == Experimental`, otherwise reset engine and return.
+- Iterate through the `cursors` list, if cursor validity is `Pending`, erases it from the `cursors` list.
+
+#### get_validity for CursorMove
+
+- `get_validity()` aka `ConditionalCursorMove::get_validity()`
+- If the cell is not active, returns `Inactive`.
+- If the cell `row` and `col` exceed the `fb.ds` size, returns `IncorrectOrExpired`.
+- Here, `row` and `col` are the parameters.
+- If `late_ack >= expiration_frame`
+  - If cursor `row` and `col` is the same as `fb.ds`, return `Correct`.
+  - If not, return `IncorrectOrExpired`.
+- Return `Pending`.
+
+#### get_validity for Cell
+
+- `get_validity()` aka `ConditionalOverlayCell::get_validity`.
+- If the cell is not active, returns `Inactive`.
+- If the cell `row` and `col` exceed the `fb.ds` size, returns `IncorrectOrExpired`.
+- Here, `row` is the parameter, `col` is a cell field.
+- Gets the `current` cell from `fb.get_cell(row, col)`.
+- If `late_ack >= expiration_frame`, we are going to see if it hasn't been updated yet.
+  - `late_ack` is the parameter, `expiration_frame` is a cell field.
+  - If `unknown` field is true, returns `CorrectNoCredit`.
+  - If `replacement` field `is_blank()`, returns `CorrectNoCredit`.
+  - If `current` cell `contents_match()` with the `replacement`,
+    - Checks the `original_contents` contents matches with the `replacement`,
+  - If so , returns `Correct`. Otherwise returns `CorrectNoCredit`.
+  - If not, returns `IncorrectOrExpired`.
+- If not, returns `Pending`.
 
 #### How to tell server the terminal size
 
