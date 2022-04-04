@@ -4,7 +4,21 @@
 
 ## mosh-client.cc
 
-In the `main` function, `STMClient` is the core to start `mosh` client.
+`mosh-client` command options
+
+```sh
+Usage: mosh-client [-# 'ARGS'] IP PORT
+Usage: mosh-client -c
+Usage: mosh-client --help
+Usage: mosh-client --version
+```
+
+- [STMClient constructor](#stmclient-constructor)
+- [STMClient::init](#stmclientinit)
+- [STMClient::main](#stmclientmain)
+- [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
+
+### main
 
 ```cpp
   try {
@@ -26,10 +40,15 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
   }
 ```
 
-- [STMClient constructor](#stmclient-constructor)
-- [STMClient::init](#stmclientinit)
-- [STMClient::main](#stmclientmain)
-- [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
+In the `main` function, `STMClient` is the core to start `mosh` client.
+
+- `main()` calls `Crypto::disable_dumping_core()` to make sure we don't dump core.
+- `main()` parses command options.
+- `mian()` gets ip argument and checks port argument range.
+- `main()` reads key from environment "MOSH_KEY".
+- `main()` reads prediction preference from environment "MOSH_PREDICTION_DISPLAY".
+- `main()` queries locale.
+- `main()` starts the `STMClient`.
 
 ### STMClient constructor
 
@@ -56,7 +75,7 @@ In the `main` function, `STMClient` is the core to start `mosh` client.
 #### Terminal::Display
 
 - `Display()` is initialized with true `use_environment`.
-- `Display()` calls [`setupterm()`](https://linux.die.net/man/3/setupterm) to reads in the `terminfo` database, initialize the `terminfo` structures.
+- `Display()` calls [`setupterm()`](https://linux.die.net/man/3/setupterm) to read in the `terminfo` database, initialize the `terminfo` structures.
 - `Display()` calls [`tigetstr()`](https://linux.die.net/man/3/setupterm) to check (erase character) [ech](https://pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html) support.
 - `Display()` calls [`tigetflag()`](https://linux.die.net/man/3/setupterm) to check (back color erase) [bce](https://pubs.opengroup.org/onlinepubs/7908799/xcurses/terminfo.html) support.
 - `Display()` get the `TERM` environment variable and compare it with the following value.
