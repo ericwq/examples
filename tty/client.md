@@ -158,23 +158,63 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `output_new_frame()` aka `STMClient::output_new_frame()`.
 - `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
 - `new_state` is of type `Terminal::Framebuffer`.
-- `output_new_frame()` calls `overlays.apply()` to [apply to local overlays](#overlaysapply) with `new_state` as parameter.
+- `output_new_frame()` calls `overlays.apply()` to [apply to local overlays](#overlaymanagerapply) with `new_state` as parameter.
 - `output_new_frame()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to calculate minimal `diff` from where we are.
 - `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
 - `output_new_frame()` sets `repaint_requested` to true.
 - `output_new_frame()` sets `local_framebuffer` to the new state.
 
-#### overlays.apply
+#### OverlayManager.apply
 
 - `overlays.apply()` aka `OverlayManager::apply()`
-- `overlays.apply()` calls `predictions.cull()` to do ?
-- `overlays.apply()` calls `predictions.apply()` to do ?
-- `overlays.apply()` calls `notifications.adjust_message()` to do ?
-- `overlays.apply()` calls `notifications.apply()` to do ?
-- `overlays.apply()` calls `title.apply()` to do ?
-- TODO : how does the overlay works?
+- `overlays.apply()` calls `predictions.cull()` to [prepare the engine for prediction](#predictionenginecull).
+- `overlays.apply()` calls `predictions.apply()` to [manipulate frame buffer for prediction](#predictionengineapply).
+- `overlays.apply()` calls `notifications.adjust_message()` to clear the `message` if time expires.
+- `overlays.apply()` calls `notifications.apply()` to [draw notificaiton string](#notificationengineapply) in frame buffer.
+- `overlays.apply()` calls `title.apply()` to set up the `window_title` and `icon_name` in frame buffer.
 
-#### cull
+#### NotificationEngine.apply
+
+- `notifications.apply()` aka `NotificationEngine::apply`.
+- Initialize `time_expired` by checking `last_word_from_server>6500` or `last_acked_state>10000`.
+- Return early, if time does not expire and the `message` is empty.
+- Hide cursor if cursor row in frame buffer is zero.
+- Draw bar across top of screen. Adding a new row of `Cell` in farme buffer.
+- Prepare notification string which compose of `explanation`, `time_elapsed`, `keystroke_str` and `message`.
+- Draw notification string on top of screen. TODO combine cell?
+
+#### PredictionEngine.apply
+
+- `predictions.apply()` aka `PredictionEngine::apply()`.
+- `apply()` has a `Framebuffer` parameter.
+- Decide whether to show the prediction based on `display_preference`, `srtt_trigger`, `glitch_trigger`.
+- Iterate through the `cursors` list, calls the second `apply()` method for each `ConditionalCursorMove` object.
+  - `apply()` method aka `ConditionalCursorMove::apply()`.
+  - If it's not `active`, returns.
+  - If it's `tentative`: `tentative_until_epoch > confirmed_epoch`, returns.
+  - Ensures `row < fb.ds.get_height()` and `col < fb.ds.get_width()`.
+  - Ensures frame buffer's `DrawState.origin_mode` is false.
+  - Move the cursor to `row` via calling `fb.ds.move_row()`. TODO
+  - Move the cursor to `col` via calling `fb.ds.move_col()`. TODO
+- Iterate through the `overlays` list, calls `apply()` method for each `ConditionalOverlayRow` object.
+  - `apply()` method aka `ConditionalOverlayRow::apply`.
+  - `apply()` iterates through each cell in the row.
+  - `apply()` calls the third [`apply()` method for each `ConditionalOverlayCell`](#conditionaloverlaycellapply) object.
+
+#### ConditionalOverlayCell.apply
+
+- If the cell `row` and `col` exceeds the `fb.ds` size and not `active`, returns.
+- If it's `tentative`: `tentative_until_epoch > confirmed_epoch`, returns.
+- If the `replacement` and the cell from frame buffer is blank, set `flag` false.
+- In case `unknown`,
+  - If `flag` is ture and `col` is not at the right most edge: `col != fb.ds.get_width() - 1`,
+    - Set the cell in frame buffer with underline `Renditions` attribute.
+  - Returns early.
+- In case `replacement` is different from the cell in frame buffer.
+  - Replace the cell in frame buffer with `replacement`.
+  - If `flag` is ture, set the cell in frame buffer with underline `Renditions` attribute.
+
+#### PredictionEngine.cull
 
 - `cull()` aka `PredictionEngine::cull()`.
 - Return early if `display_preference == Never`.
@@ -189,7 +229,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - Iterate through each row in `overlays`, which is type of `list<ConditionalOverlayRow>`.
   - Erase current row if `i->row_num < 0` or `i->row_num >= fb.ds.get_height()`, continue the next row.
   - Iterate through each cell in the row.
-  - [Check cell validity](#get_validity-for-cell) via calling `get_validity()`,
+  - [Check cell validity](#conditionaloverlaycellget_validity) via calling `get_validity()`,
   - In case `IncorrectOrExpired`,
     - If cell tentative time is greater than engine's `confirmed_epoch`,
       - Reset the cell, if `display_preference == Experimental`, otherwise `kill_epoch()`. TODO
@@ -203,22 +243,22 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - In case `Pending`, When a prediction takes a long time to be confirmed,
     - we activate the predictions even if SRTT is low.
   - Continue the next row.
-- If `cursors` is not empty and the [cursor validity](#get_validity-for-cursormove) is `IncorrectOrExpired`,
+- If `cursors` is not empty and the [cursor validity](#conditionalcursormoveget_validity) is `IncorrectOrExpired`,
 - Clear `cursors` if `display_preference == Experimental`, otherwise reset engine and return.
 - Iterate through the `cursors` list, if cursor validity is `Pending`, erases it from the `cursors` list.
 
-#### get_validity for CursorMove
+#### ConditionalCursorMove.get_validity
 
 - `get_validity()` aka `ConditionalCursorMove::get_validity()`
 - If the cell is not active, returns `Inactive`.
-- If the cell `row` and `col` exceed the `fb.ds` size, returns `IncorrectOrExpired`.
+- If the cell `row` and `col` exceeds the `fb.ds` size, returns `IncorrectOrExpired`.
 - Here, `row` and `col` are the parameters.
 - If `late_ack >= expiration_frame`
   - If cursor `row` and `col` is the same as `fb.ds`, return `Correct`.
   - If not, return `IncorrectOrExpired`.
 - Return `Pending`.
 
-#### get_validity for Cell
+#### ConditionalOverlayCell.get_validity
 
 - `get_validity()` aka `ConditionalOverlayCell::get_validity`.
 - If the cell is not active, returns `Inactive`.
