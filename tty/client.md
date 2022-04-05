@@ -404,19 +404,35 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - If true, append escape sequence to `frame`. Reset cursor position in `frame` to (0,0).
   - If false, update the cursor position and rendition with `frame.last_frame.ds`
 - Checks is cursor visibility initialized: if false, append escape sequence to `frame`.
-- Extends rows if we've gotten a resize and new is wider than old.
-- Adds rows if we've gotten a resize and new is taller than old.
-- Checks if display moved up by a certain number of lines
-- Updates the display, row by row, via calling `put_row()` for each row.
-- TODO : the detail of `put_row()`.
-- Checks if cursor location changed, if so, append escape sequence to `frame`.
-- Checks if cursor visibility changed, if so, append escape sequence to `frame`.
+- Copies the `framestate.last_frame.get_rows()` to new `rows`.
+- Extends `rows` width if we've gotten a resize and new is wider than old.
+- Adds `rows` hight if we've gotten a resize and new is taller than old.
+- Checks if display moved up by a certain number of lines,
+  - Calculate the scroll region.
+  - Append escape sequence to `frame` fro scrolling.
+  - Do the move in our local index: `rows`.
+- For rest rows, [updates the display row by row](#displayput_row).
+- Checks if cursor location changed, if true, append escape sequence to `frame`.
+- Checks if cursor visibility changed, if true, append escape sequence to `frame`.
 - Checks if renditions changed: if true, append escape sequence to `frame`.
 - Checks if bracketed paste mode changed: if true, append escape sequence to `frame`.
 - Checks if mouse reporting mode changed: if true, append escape sequence to `frame`.
 - Checks if mouse focus mode changed: if true, append escape sequence to `frame`.
 - Checks if mouse encoding mode changed: if true, append escape sequence to `frame`.
 - Returns the final `frame` difference string for output.
+
+#### Display::put_row
+
+- Has the `FrameState`, new frame buffer, `frame_y` position, and the local index `rows` as parameters.
+- If we're forced to write the first column because of wrap, go ahead and do so.
+- If rows are the same object, we don't need to do anything at all.
+- Iterate for every Cell,
+  - Does cell need to be drawn? Skip all this.
+  - Slurp up all the empty cells: just counting.
+  - Clear or write cells within the row (not to end).
+  - Now draw a character cell.
+- Clear or write empty cells at EOL.
+- TODO : understand more about escape sequence drawing
 
 #### How to initialize frame buffer
 
