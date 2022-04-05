@@ -181,7 +181,12 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - Hide cursor if cursor row in frame buffer is zero.
 - Draw bar across top of screen. Adding a new row of `Cell` in farme buffer.
 - Prepare notification string which compose of `explanation`, `time_elapsed`, `keystroke_str` and `message`.
-- Draw notification string on top of screen. TODO combine cell?
+- Draw notification string on top of screen.
+  - Support normal character, wide character, combining character(up to 32)
+  - [Combining Diacritical Marks](https://unicode.org/charts/PDF/U0300.pdf)
+  - [Combining Diacritical Marks Supplement](https://unicode.org/charts/PDF/U1DC0.pdf),
+  - [Combining Diacritical Marks for Symbols](https://unicode.org/charts/PDF/U20D0.pdf)
+  - [Combining Half Marks](https://unicode.org/charts/PDF/UFE20.pdf)
 
 #### PredictionEngine.apply
 
@@ -194,12 +199,35 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - If it's `tentative`: `tentative_until_epoch > confirmed_epoch`, returns.
   - Ensures `row < fb.ds.get_height()` and `col < fb.ds.get_width()`.
   - Ensures frame buffer's `DrawState.origin_mode` is false.
-  - Move the cursor to `row` via calling `fb.ds.move_row()`. TODO
-  - Move the cursor to `col` via calling `fb.ds.move_col()`. TODO
+  - [Move the cursor to `row`](#drawstatemove_row) via calling `fb.ds.move_row()`.
+  - [Move the cursor to `col`](#drawstatemove_col) via calling `fb.ds.move_col()`.
 - Iterate through the `overlays` list, calls `apply()` method for each `ConditionalOverlayRow` object.
   - `apply()` method aka `ConditionalOverlayRow::apply`.
   - `apply()` iterates through each cell in the row.
   - `apply()` calls the third [`apply()` method for each `ConditionalOverlayCell`](#conditionaloverlaycellapply) object.
+
+#### DrawState.move_row
+
+- `move_row()` aka `DrawState::move_row()`
+- `move_row()` has a `N` parameter, which is the row number, a `relative` parameter means relative or not.
+- For relative number, add `N` to `cursor_row`.
+- For absolute number, assign `N` to `cursor_row`.
+- Check the `cursor_row` and `cursor_col` to make sure it comes within the window size.
+- Update the `combining_char_col` and `combining_char_row` for combining character.
+- Set `next_print_will_wrap` false.
+
+#### DrawState.move_col
+
+- `move_col()` aka `DrawState::move_col()`
+- `move_row()` has a `N` parameter, which is the column number, a `relative` parameter means relative or not.
+- If `implicit` is true, update the `combining_char_col` and `combining_char_row` for combining character.
+- For relative number, add `N` to `cursor_col`.
+- For absolute number, assign `N` to `cursor_col`.
+- If `implicit` is true, `next_print_will_wrap` dependens on whether it reaches the window size.
+- Check the `cursor_row` and `cursor_col` to make sure it comes within the window size.
+- If `implicit` is false,
+  - Update the `combining_char_col` and `combining_char_row` for combining character.
+  - Set `next_print_will_wrap` false.
 
 #### ConditionalOverlayCell.apply
 
@@ -232,20 +260,42 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - [Check cell validity](#conditionaloverlaycellget_validity) via calling `get_validity()`,
   - In case `IncorrectOrExpired`,
     - If cell tentative time is greater than engine's `confirmed_epoch`,
-      - Reset the cell, if `display_preference == Experimental`, otherwise `kill_epoch()`. TODO
+      - [Reset the cell](#conditionaloverlaycellreset), if `display_preference == Experimental`, otherwise [`kill_epoch()`](#predictionenginekill_epoch).
       - Continue the iteration.
-    - If not, Reset the cell, if `display_preference == Experimental`, otherwise reset engine and return. TODO
+    - If not, [Reset the cell](#conditionaloverlaycellreset), if `display_preference == Experimental`, otherwise [reset engine](#predictionenginereset) and return.
   - In case `Correct`,
     - If cell tentative time is greater than engine's `confirmed_epoch`, update `confirmed_epoch`.
     - When predictions come in quickly, slowly take away the glitch trigger.
     - Match rest of row to the actual renditions.
-  - In case `CorrectNoCredit`, reset the cell.
+  - In case `CorrectNoCredit`, [reset the cell](#conditionaloverlaycellreset).
   - In case `Pending`, When a prediction takes a long time to be confirmed,
-    - we activate the predictions even if SRTT is low.
+    - we activate the predictions even if `SRTT` is low.
   - Continue the next row.
 - If `cursors` is not empty and the [cursor validity](#conditionalcursormoveget_validity) is `IncorrectOrExpired`,
-- Clear `cursors` if `display_preference == Experimental`, otherwise reset engine and return.
+- Clear `cursors` list if `display_preference == Experimental`, otherwise [reset engine](#predictionenginereset) and return.
 - Iterate through the `cursors` list, if cursor validity is `Pending`, erases it from the `cursors` list.
+
+#### PredictionEngine::reset
+
+- Clear the `cursors` list.
+- Clear the `overlay` list.
+- Increase the `prediction_epoch` to become tentative.
+
+#### PredictionEngine::kill_epoch
+
+- `kill_epoch` has a `epoch` parameter and a `fb` parameter.
+- Remove item from `cursors` if the item's `tentative_until_epoch > epoch-1`.
+- Add a new `ConditionalCursorMove` to `cursors`.
+- Iterate through each cell in `overlays`,
+  - If the cell's `tentative_until_epoch > epoch-1`, [reset the cell](#conditionaloverlaycellreset).
+- Increase the `prediction_epoch` to become tentative.
+
+#### ConditionalOverlayCell::reset
+
+- Set the `unknown` false.
+- Clear the `original_contents` list.
+- Set both `expiration_frame` and `tentative_until_epoch` to -1.
+- Set the `active` false.
 
 #### ConditionalCursorMove.get_validity
 
