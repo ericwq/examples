@@ -394,26 +394,29 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 #### How to calculate frame buffer difference
 
 - `new_frame()` aka `Display::new_frame()`
-- `new_frame()` receives two `Framebuffer`: `last` and `f`, and builds the difference for output to terminal display.
-- `new_frame()` initializes a `FrameState`: `frame`, with the old `Framebuffer` `last`.
-- `new_frame()` checks if the bell ring happened: if true, append escape sequence to `frame`.
-- `new_frame()` checks if icon name or window title changed: if true, append escape sequence to `frame`.
-- `new_frame()` checks if reverse video state changed: if true, append escape sequence `frame`.
-- `new_frame()` checks if window size changed: if true, append escape sequence to `frame`.
-- `new_frame()` checks is cursor visibility initialized: if false, append escape sequence to `frame`.
-- `new_frame()` extends rows if we've gotten a resize and new is wider than old.
-- `new_frame()` adds rows if we've gotten a resize and new is taller than old.
-- `new_frame()` checks if display moved up by a certain number of lines
-- `new_frame()` updates the display, row by row, via calling `put_row()` for each row.
+- Builds difference string for output to terminal display.
+- Has two `Framebuffer` parameters: `last` and `f`.
+- Initializes a `FrameState`: `frame`, with the old `Framebuffer` `last`.
+- Checks if the bell ring happened: if true, append escape sequence to `frame`.
+- Checks if icon name or window title changed: if true, append escape sequence to `frame`.
+- Checks if reverse video state changed: if true, append escape sequence to `frame`.
+- Checks if window size changed:
+  - If true, append escape sequence to `frame`. Reset cursor position in `frame` to (0,0).
+  - If false, update the cursor position and rendition with `frame.last_frame.ds`
+- Checks is cursor visibility initialized: if false, append escape sequence to `frame`.
+- Extends rows if we've gotten a resize and new is wider than old.
+- Adds rows if we've gotten a resize and new is taller than old.
+- Checks if display moved up by a certain number of lines
+- Updates the display, row by row, via calling `put_row()` for each row.
 - TODO : the detail of `put_row()`.
-- `new_frame()` checks if cursor location changed, append escape sequence to `frame`.
-- `new_frame()` checks if cursor visibility changed, append escape sequence to `frame`.
-- `new_frame()` checks if renditions changed: if true, append escape sequence to `frame`.
-- `new_frame()` checks if bracketed paste mode changed: if true, append escape sequence to `frame`.
-- `new_frame()` checks if mouse reporting mode changed: if true, append escape sequence to `frame`.
-- `new_frame()` checks if mouse focus mode changed: if true, append escape sequence to `frame`.
-- `new_frame()` checks if mouse encoding mode changed: if true, append escape sequence to `frame`.
-- `new_frame()` returns the final `frame` escape sequence string.
+- Checks if cursor location changed, if so, append escape sequence to `frame`.
+- Checks if cursor visibility changed, if so, append escape sequence to `frame`.
+- Checks if renditions changed: if true, append escape sequence to `frame`.
+- Checks if bracketed paste mode changed: if true, append escape sequence to `frame`.
+- Checks if mouse reporting mode changed: if true, append escape sequence to `frame`.
+- Checks if mouse focus mode changed: if true, append escape sequence to `frame`.
+- Checks if mouse encoding mode changed: if true, append escape sequence to `frame`.
+- Returns the final `frame` difference string for output.
 
 #### How to initialize frame buffer
 
