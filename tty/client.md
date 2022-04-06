@@ -156,12 +156,12 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 #### How to output content
 
 - `output_new_frame()` aka `STMClient::output_new_frame()`.
-- `output_new_frame()` gets `new_state` (the `Framebuffer`) from the state saved in `received_states`.
+- `output_new_frame()` gets `new_state` from the latest state saved in `received_states`.
 - `new_state` is of type `Terminal::Framebuffer`.
 - `output_new_frame()` calls `overlays.apply()` to [apply to local overlays](#overlaymanagerapply) with `new_state` as parameter.
 - `output_new_frame()` calls [`display.new_frame()`](#how-to-calculate-frame-buffer-difference) to calculate minimal `diff` from where we are.
 - `output_new_frame()` writes the `diff` to `STDOUT_FILENO`.
-- `output_new_frame()` sets `repaint_requested` to true.
+- `output_new_frame()` sets `repaint_requested` to false.
 - `output_new_frame()` sets `local_framebuffer` to the new state.
 
 #### OverlayManager.apply
@@ -170,7 +170,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - `overlays.apply()` calls `predictions.cull()` to [prepare the engine for prediction](#predictionenginecull).
 - `overlays.apply()` calls `predictions.apply()` to [manipulate frame buffer for prediction](#predictionengineapply).
 - `overlays.apply()` calls `notifications.adjust_message()` to clear the `message` if time expires.
-- `overlays.apply()` calls `notifications.apply()` to [draw notificaiton string](#notificationengineapply) in frame buffer.
+- `overlays.apply()` calls `notifications.apply()` to [draw notification string](#notificationengineapply) in frame buffer.
 - `overlays.apply()` calls `title.apply()` to set up the `window_title` and `icon_name` in frame buffer.
 
 #### NotificationEngine.apply
@@ -235,19 +235,20 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - If it's `tentative`: `tentative_until_epoch > confirmed_epoch`, returns.
 - If the `replacement` and the cell from frame buffer is blank, set `flag` false.
 - In case `unknown`,
-  - If `flag` is ture and `col` is not at the right most edge: `col != fb.ds.get_width() - 1`,
+  - If `flag` is true and `col` is not at the right most edge: `col != fb.ds.get_width() - 1`,
     - Set the cell in frame buffer with underline `Renditions` attribute.
   - Returns early.
 - In case `replacement` is different from the cell in frame buffer.
   - Replace the cell in frame buffer with `replacement`.
-  - If `flag` is ture, set the cell in frame buffer with underline `Renditions` attribute.
+  - If `flag` is true, set the cell in frame buffer with underline `Renditions` attribute.
 
 #### PredictionEngine.cull
 
 - `cull()` aka `PredictionEngine::cull()`.
 - Return early if `display_preference == Never`.
+- [Reset engine](#predictionenginereset) if `last_height` or `last_width` is different from `fb.ds`.
 - Control `srtt_trigger` with hysteresis: `send_interval > SRTT_TRIGGER_HIGH`.
-  - If `send_interval <= SRTT_TRIGGER_LOW` and `srtt_trigger` is ture and `active()` returns false.
+  - If `send_interval <= SRTT_TRIGGER_LOW` and `srtt_trigger` is true and `active()` returns false.
     - `active()` aka `PredictionEngine::active()`.
     - `active()` iterates through each cell in `overlays`.
     - `active()` true if any cell is active.
@@ -258,22 +259,23 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - Erase current row if `i->row_num < 0` or `i->row_num >= fb.ds.get_height()`, continue the next row.
   - Iterate through each cell in the row.
   - [Check cell validity](#conditionaloverlaycellget_validity) via calling `get_validity()`,
-  - In case `IncorrectOrExpired`,
+  - In case validity returns `IncorrectOrExpired`,
     - If cell tentative time is greater than engine's `confirmed_epoch`,
       - [Reset the cell](#conditionaloverlaycellreset), if `display_preference == Experimental`, otherwise [`kill_epoch()`](#predictionenginekill_epoch).
       - Continue the iteration.
     - If not, [Reset the cell](#conditionaloverlaycellreset), if `display_preference == Experimental`, otherwise [reset engine](#predictionenginereset) and return.
-  - In case `Correct`,
+  - In case validity returns `Correct`,
     - If cell tentative time is greater than engine's `confirmed_epoch`, update `confirmed_epoch`.
     - When predictions come in quickly, slowly take away the glitch trigger.
     - Match rest of row to the actual renditions.
-  - In case `CorrectNoCredit`, [reset the cell](#conditionaloverlaycellreset).
-  - In case `Pending`, When a prediction takes a long time to be confirmed,
+  - In case validity returns `CorrectNoCredit`, [reset the cell](#conditionaloverlaycellreset).
+  - In case validity returns `Pending`, When a prediction takes a long time to be confirmed,
     - we activate the predictions even if `SRTT` is low.
   - Continue the next row.
 - If `cursors` is not empty and the [cursor validity](#conditionalcursormoveget_validity) is `IncorrectOrExpired`,
 - Clear `cursors` list if `display_preference == Experimental`, otherwise [reset engine](#predictionenginereset) and return.
 - Iterate through the `cursors` list, if cursor validity is `Pending`, erases it from the `cursors` list.
+- The result of `cull()` is to set up `srtt_trigger`, `glitch_trigger`.
 
 #### PredictionEngine::reset
 
@@ -455,21 +457,38 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 
 #### How to process the user input
 
-- `STMClient::main` calls `process_user_input()` if the main loop got the user keystrokes from `STDIN_FILENO`.
 - `process_user_input()` aka `STMClient::process_user_input()`.
-- `process_user_input()` calls `read()` system call to read the user keystrokes.
-- `process_user_input()` calls `overlays.get_prediction_engine().set_local_frame_sent()` to save the last `send_states` number.
-- `process_user_input()` check each input character:
+- `process_user_input()` is called to get the user keystrokes from `STDIN_FILENO`.
+- Calls `read()` system call to read the user keystrokes.
+- Calls prediction engine `set_local_frame_sent()` to save the last `send_states` number.
+- Iterates through each input character:
 - `process_user_input()` calls `overlays.get_prediction_engine().new_user_byte()` to
 - TODO : how does the prediction engine works.
-- If it get the `LF`, `CR` character, set `repaint_requested` to be true.
-- For each character, `process_user_input()` calls `network->get_current_state().push_back()` to save it in `UserStream` object.
-  - `network->get_current_state()` is actually `TransportSender.get_current_state()`.
-  - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
-  - Here the keystroke is wrapped in `Parser::UserByte`.
-  - The return value of `TransportSender.get_current_state()` is a `UserStream` object.
-  - `network->get_current_state().push_back()` adds `Parser::UserByte` to `UserStream`.
+- If `quit_sequence_started` is ready:
+  - If current byte is ".", set message for notification engine and `start_shutdown()`, return true.
+  - If current byte is "^Z",
+    - Sets message for notification engine,
+    - Restores the `saved_termios` for `STDIN_FILENO`, via `tcsetattr()`.
+    - Prints "[mosh is suspended.]" message.
+    - Flushes the output, send `SIGSTOP` signal.
+    - Waiting for resume.
+  - If current byte is `escape_pass_key`, [pushes it into `UserStream` object](#how-to-save-the-user-input-to-state).
+  - For other character, escape key followed by anything other than "." and "^" gets sent literally.
+- Checks whether current byte is `escape_key`: "Ctrl-^", set `quit_sequence_started` accordingly.
+  - If true, set `lf_entered` to be false.
+  - If true, set the message `escape_key_help` for notification engine.
+- If current byte is the `LF`, `CR` control character, set `lf_entered` accordingly.
+- If current byte is `FF` control character, set `repaint_requested` to be true.
+- For other character, [pushes it into `UserStream` object](#how-to-save-the-user-input-to-state).
 - The result of `process_user_input()` is that all the user keystrokes are saved in current state.
+
+#### How to save the user input to state
+
+- `network->get_current_state()` is actually `TransportSender.get_current_state()`.
+- The return value of `TransportSender.get_current_state()` is a `UserStream` object.
+- `push_back()` creates `Parser::UserByte`.
+- `push_back()` wraps `UserByte` with `UserEvent` and pushes it into `UserStream`.
+- `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
 
 #### How to process resize
 
