@@ -462,23 +462,18 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - Calls `read()` system call to read the user keystrokes.
 - Calls `set_local_frame_sent()` of prediction engine to save the last `send_states` number.
 - Iterates through each input character:
-- Calls `new_user_byte()` of prediction engine to [process the input character](#predictionenginenew_user_byte).
-- If `quit_sequence_started` is ready:
-  - If current byte is ".", set message for notification engine and `start_shutdown()`, return true.
-  - If current byte is "^Z",
-    - Sets message for notification engine,
-    - Restores the `saved_termios` for `STDIN_FILENO`, via `tcsetattr()`.
-    - Prints "[mosh is suspended.]" message.
-    - Flushes the output, send `SIGSTOP` signal.
-    - Waiting for resume.
-  - If current byte is `escape_pass_key`, [pushes it into `UserStream` object](#how-to-save-the-user-input-to-state).
-  - For other character, escape key followed by anything other than "." and "^" gets sent literally.
-- Checks whether current byte is `escape_key`: "Ctrl-^", set `quit_sequence_started` accordingly.
-  - If true, set `lf_entered` to be false.
-  - If true, set the message `escape_key_help` for notification engine.
-- If current byte is the `LF`, `CR` control character, set `lf_entered` accordingly.
-- If current byte is `FF` control character, set `repaint_requested` to be true.
-- For other character, [pushes it into `UserStream` object](#how-to-save-the-user-input-to-state).
+  - Calls `new_user_byte()` to [predict the input character](#predictionenginenew_user_byte).
+  - If `quit_sequence_started` is ready:
+    - If current byte is ".", set message for notification engine and `start_shutdown()`, return true.
+    - If current byte is "^Z", [suspend the mosh client](#how-does-it-suspend).
+    - If current byte is `escape_pass_key`, [pushes it into current state](#how-to-save-the-user-input-to-state).
+    - For other character, escape key followed by anything other than "." and "^" gets sent literally.
+  - Checks whether current byte is `escape_key`: "Ctrl-^", set `quit_sequence_started` accordingly.
+    - If true, set `lf_entered` to be false.
+    - If true, set the message `escape_key_help` for notification engine.
+  - If current byte is the `LF`, `CR` control character, set `lf_entered` accordingly.
+  - If current byte is `FF` control character, set `repaint_requested` to be true.
+  - For other character, [pushes it into current state](#how-to-save-the-user-input-to-state).
 - The result of `process_user_input()` is that all the user keystrokes are saved in current state.
 
 #### PredictionEngine::new_user_byte
@@ -492,6 +487,7 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - Calls parser.input() to [parse octet into actions](server.md#parse-unicode-character-to-action) with `actions` as paramter.
 - Iterates through each action in `actions`:
 - In case action is type of `Parser::Print`,
+- TODO : detail of prediction
 - In case action is type of `Parser::Execute`,
 - In case action is type of `Parser::Esc_Dispatch`,
 - In case action is type of `Parser::CSI_Dispatch`,
@@ -504,6 +500,15 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - `push_back()` creates `Parser::UserByte`.
 - `push_back()` wraps `UserByte` with `UserEvent` and pushes it into `UserStream`.
 - `UserStream` object contains two kinds of character: `Parser::UserByte` and `Parser::Resize`.
+
+#### How does it suspend
+
+- Close display via writing to `STDOUT_FILENO` with `display.close()`.
+- Restores the `saved_termios` for `STDIN_FILENO`, via `tcsetattr()`.
+- Prints "[mosh is suspended.]" message.
+- Flushes the output,
+- Send `SIGSTOP` signal.
+- Waiting for resume.
 
 #### How to process resize
 
