@@ -460,10 +460,9 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - `process_user_input()` aka `STMClient::process_user_input()`.
 - `process_user_input()` is called to get the user keystrokes from `STDIN_FILENO`.
 - Calls `read()` system call to read the user keystrokes.
-- Calls prediction engine `set_local_frame_sent()` to save the last `send_states` number.
+- Calls `set_local_frame_sent()` of prediction engine to save the last `send_states` number.
 - Iterates through each input character:
-- `process_user_input()` calls `overlays.get_prediction_engine().new_user_byte()` to
-- TODO : how does the prediction engine works.
+- Calls `new_user_byte()` of prediction engine to [process the input character](#predictionenginenew_user_byte).
 - If `quit_sequence_started` is ready:
   - If current byte is ".", set message for notification engine and `start_shutdown()`, return true.
   - If current byte is "^Z",
@@ -481,6 +480,22 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - If current byte is `FF` control character, set `repaint_requested` to be true.
 - For other character, [pushes it into `UserStream` object](#how-to-save-the-user-input-to-state).
 - The result of `process_user_input()` is that all the user keystrokes are saved in current state.
+
+#### PredictionEngine::new_user_byte
+
+- `new_user_byte()` has a `the_byte` parameter and a frame buffer parameter.
+- Returns early if `display_preference == Never`.
+- Sets `prediction_epoch = confirmed_epoch` if `display_preference == Experimental`,
+- Calls `cull()` to [prepare for the prediction engine](#predictionenginecull).
+- Translates application-mode cursor control function to ANSI cursor control sequence.
+- Initializes a new `actions`, which is type of `Parser::Actions`.
+- Calls parser.input() to [parse octet into actions](server.md#parse-unicode-character-to-action) with `actions` as paramter.
+- Iterates through each action in `actions`:
+- In case action is type of `Parser::Print`,
+- In case action is type of `Parser::Execute`,
+- In case action is type of `Parser::Esc_Dispatch`,
+- In case action is type of `Parser::CSI_Dispatch`,
+- Next iteration.
 
 #### How to save the user input to state
 
