@@ -432,7 +432,8 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
   - Clear or write cells within the row (not to end).
   - Now draw a character cell.
 - Clear or write empty cells at EOL.
-- TODO : understand more about escape sequence drawing
+
+See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html) to understand more about escape sequence drawing.
 
 #### How to initialize frame buffer
 
