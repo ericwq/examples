@@ -426,6 +426,7 @@ For `Complete`:
 - Action = Ignore; State = CSI_Entry - "0x9B"
 - See [List of Unicode characters](https://en.wikipedia.org/wiki/List_of_Unicode_characters)
 - See [ANSI escape code in wikipedia](https://en.wikipedia.org/wiki/ANSI_escape_code)
+- See [C0 and C1 control codes](https://en.wikipedia.org/wiki/C0_and_C1_control_codes#Basic_ASCII_control_codes)
 
 #### C0_prime rule
 
