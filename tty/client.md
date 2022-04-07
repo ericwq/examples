@@ -478,20 +478,36 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 
 #### PredictionEngine::new_user_byte
 
-- `new_user_byte()` has a `the_byte` parameter and a frame buffer parameter.
+- `new_user_byte()` has a `the_byte` parameter and a `local_framebuffer` parameter.
 - Returns early if `display_preference == Never`.
 - Sets `prediction_epoch = confirmed_epoch` if `display_preference == Experimental`,
 - Calls `cull()` to [prepare for the prediction engine](#predictionenginecull).
 - Translates application-mode cursor control function to ANSI cursor control sequence.
+- Updates the `last_byte` with the value of `the_byte`.
 - Initializes a new `actions`, which is type of `Parser::Actions`.
-- Calls parser.input() to [parse octet into actions](server.md#parse-unicode-character-to-action) with `actions` as paramter.
+- Calls `parser.input()` to [parse octet into actions](server.md#parse-unicode-character-to-action) with `the_byte` and `actions` as paramters.
 - Iterates through each action in `actions`:
-- In case action is type of `Parser::Print`,
-- TODO : detail of prediction
-- In case action is type of `Parser::Execute`,
-- In case action is type of `Parser::Esc_Dispatch`,
-- In case action is type of `Parser::CSI_Dispatch`,
-- Next iteration.
+  - In case action is type of `Parser::Print`,
+  - TODO : detail of prediction
+  - In case action is type of `Parser::Execute`,
+    - If `the_byte` is `CR`, the prediction becomes tentative. [change cursor in frame buffer](#predictionenginenewline_carriage_return).
+    - For other character, the prediction becomes tentative.
+  - In case action is type of `Parser::Esc_Dispatch`,
+    - The prediction becomes tentative.
+  - In case action is type of `Parser::CSI_Dispatch`,
+    - If `the_byte` is right arrow, move the cursor in frame buffer.
+    - If `the_byte` is left arrow, move the cursor in frame buffer.
+    - For other character, the prediction becomes tentative.
+  - For other action type, deletes current action.
+
+#### PredictionEngine::newline_carriage_return
+
+- `newline_carriage_return` has a frame buffer parameter.
+- Calls `init_cursor()` with frame buffer as parameter.
+- Set the cursor column to 0.
+- If the cursor row is at the bottom of screen: `cursor().row == fb.ds.get_height() - 1`.
+  - Makes blank prediction for last row.
+- If not, Add the cursor row.
 
 #### How to save the user input to state
 
