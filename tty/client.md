@@ -510,14 +510,28 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - [Finds or creates the specified row](#predictionengineget_or_make_row) from prediction engine.
 - If the last cursor in `cursors` is `<=0`, ignores it.
 - Decreases the last cursor by one.
-- Sets expire frame number and expire time.
-- Iterates through the end of `the_row`, starting from current cursor column.
+- Sets expire frame number and expire time for `cursors`.
+- Iterates through to the end of `the_row`, starting from current cursor column.
   - Replace current `Cell` with the next one.
-- TODO : understand the meaning of `unknown`, `replacement`, `active`.
+- `unknown`: whether we have the replacement.
+- `replacement`: means the original contents before the prediction.
+- `active`: means this cell is a prediction.
+
+![mosh-row.svg](img/mosh-row.svg)
 
 #### How to process printable character.
 
-- TODO : detail
+- `new_user_byte()` continues to process printable character.
+- Makes sure `cursor().col` and `cursor().row` is in range.
+- [Finds `the_row` from prediction engine](#predictionengineget_or_make_row) with specified row as parameter.
+- If cursor position in the last column, the prediction becomes tentative.
+- Reversely iterate through to the end of `cursor().col`, starting from the end of `the_row`.
+  - Mov the current `Cell` to the right: do the insert.
+- Clears the cursor position `Cell`, matches renditions of character to the left, inserts the character.
+- Sets expire frame number and expire time for `cursors`.
+- Do we need to wrap?
+  - If don't need, just increases `cursor().col++`.
+  - If do need, the prediction becomes tentative, [perform `CR` in frame buffer](#predictionenginenewline_carriage_return). 
 
 #### PredictionEngine::get_or_make_row
 
