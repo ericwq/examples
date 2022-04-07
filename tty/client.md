@@ -485,10 +485,14 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - Translates application-mode cursor control function to ANSI cursor control sequence.
 - Updates the `last_byte` with the value of `the_byte`.
 - Initializes a new `actions`, which is type of `Parser::Actions`.
-- Calls `parser.input()` to [parse octet into actions](server.md#parse-unicode-character-to-action) with `the_byte` and `actions` as paramters.
+- Calls `parser.input()` to [parse octet into actions](server.md#parse-unicode-character-to-action) with `the_byte` and `actions` as parameters.
 - Iterates through each action in `actions`:
   - In case action is type of `Parser::Print`,
-  - TODO : detail of prediction
+    - Calls [`init_cursor()`](#predictionengineinit_cursor) with frame buffer as parameter.
+    - Extracts `ch` from `act->ch`.
+  - If `ch` is backspace/delete: `ch == 0x7f`, [process backspace character](#how-to-process-backspace-character).
+  - If `ch<=0x20` and `wcwidth(ch) != 1`, the prediction becomes tentative.
+  - For other character, [process printable character](#how-to-process-printable-character).
   - In case action is type of `Parser::Execute`,
     - If `the_byte` is `CR`, the prediction becomes tentative. [change cursor in frame buffer](#predictionenginenewline_carriage_return).
     - For other character, the prediction becomes tentative.
@@ -500,14 +504,50 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
     - For other character, the prediction becomes tentative.
   - For other action type, deletes current action.
 
+#### How to process backspace character
+
+- `new_user_byte()` continues to process backspace character (0x7f).
+- [Finds or creates the specified row](#predictionengineget_or_make_row) from prediction engine.
+- If the last cursor in `cursors` is `<=0`, ignores it.
+- Decreases the last cursor by one.
+- Sets expire frame number and expire time.
+- Iterates through the end of `the_row`, starting from current cursor column.
+  - Replace current `Cell` with the next one.
+- TODO : the meaning of `unknown`, `replacement`, `active`.
+
+#### How to process printable character.
+
+- TODO : detail
+
+#### PredictionEngine::get_or_make_row
+
+- `get_or_make_row()` has row number and the number of columns as paramters.
+- `get_or_make_row()` finds the specified row from prediction engine or creates a new row.
+- Tries to find the specified row in `overlays`. If found, returns it.
+- Creates a new `ConditionalOverlayRow` with the row number as parameter.
+- Initializes every cell in the above row.
+- Pushes the new row into `overlays`.
+
 #### PredictionEngine::newline_carriage_return
 
 - `newline_carriage_return` has a frame buffer parameter.
-- Calls `init_cursor()` with frame buffer as parameter.
+- Calls [`init_cursor()`](#predictionengineinit_cursor) with frame buffer as parameter.
 - Set the cursor column to 0.
 - If the cursor row is at the bottom of screen: `cursor().row == fb.ds.get_height() - 1`.
   - Makes blank prediction for last row.
 - If not, Add the cursor row.
+
+#### PredictionEngine::init_cursor
+
+- `init_cursor` has a frame buffer parameter.
+- If `cursors` is empty,
+  - Creates a `ConditionalCursorMove` with frame buffer cursor position as parameters.
+  - Pushes the above object into `cursors` list.
+  - Sets latest cursor in `cursors` list active.
+- In latest cursor in `cursors` list, if the cursor's `tentative_until_epoch != prediction_epoch`,
+  - Creates a `ConditionalCursorMove` with latest cursor position in `cursors` list as parameters.
+  - Pushes the above object into `cursors` list.
+  - Sets latest cursor in `cursors` list active.
 
 #### How to save the user input to state
 
