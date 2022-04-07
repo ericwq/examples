@@ -490,8 +490,8 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
   - In case action is type of `Parser::Print`,
     - Calls [`init_cursor()`](#predictionengineinit_cursor) with frame buffer as parameter.
     - Extracts `ch` from `act->ch`.
-    - If `ch` is backspace/delete: `ch == 0x7f`, [process backspace character](#how-to-process-backspace-character).
-    - If `ch<=0x20` and `wcwidth(ch) != 1`, the prediction becomes tentative.
+    - If `ch` is backspace/delete: "ch == 0x7f", [process backspace character](#how-to-process-backspace-character).
+    - If "ch<=0x20" and `wcwidth(ch) != 1`, the prediction becomes tentative.
     - For other character, [process printable character](#how-to-process-printable-character).
   - In case action is type of `Parser::Execute`,
     - If `the_byte` is `CR`, the prediction becomes tentative. [perform `CR` in frame buffer](#predictionenginenewline_carriage_return).
@@ -531,7 +531,7 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - Sets expire frame number and expire time for `cursors`.
 - Do we need to wrap?
   - If don't need, just increases `cursor().col++`.
-  - If do need, the prediction becomes tentative, [perform `CR` in frame buffer](#predictionenginenewline_carriage_return). 
+  - If do need, the prediction becomes tentative, [perform `CR` in frame buffer](#predictionenginenewline_carriage_return).
 
 #### PredictionEngine::get_or_make_row
 
