@@ -485,16 +485,16 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - Translates application-mode cursor control function to ANSI cursor control sequence.
 - Updates the `last_byte` with the value of `the_byte`.
 - Initializes a new `actions`, which is type of `Parser::Actions`.
-- Calls `parser.input()` to [parse octet into actions](server.md#parse-unicode-character-to-action) with `the_byte` and `actions` as parameters.
+- Calls `parser.input()` to [parse character into actions](server.md#parse-unicode-character-to-action) with `the_byte` and `actions` as parameters.
 - Iterates through each action in `actions`:
   - In case action is type of `Parser::Print`,
     - Calls [`init_cursor()`](#predictionengineinit_cursor) with frame buffer as parameter.
     - Extracts `ch` from `act->ch`.
-  - If `ch` is backspace/delete: `ch == 0x7f`, [process backspace character](#how-to-process-backspace-character).
-  - If `ch<=0x20` and `wcwidth(ch) != 1`, the prediction becomes tentative.
-  - For other character, [process printable character](#how-to-process-printable-character).
+    - If `ch` is backspace/delete: `ch == 0x7f`, [process backspace character](#how-to-process-backspace-character).
+    - If `ch<=0x20` and `wcwidth(ch) != 1`, the prediction becomes tentative.
+    - For other character, [process printable character](#how-to-process-printable-character).
   - In case action is type of `Parser::Execute`,
-    - If `the_byte` is `CR`, the prediction becomes tentative. [change cursor in frame buffer](#predictionenginenewline_carriage_return).
+    - If `the_byte` is `CR`, the prediction becomes tentative. [perform `CR` in frame buffer](#predictionenginenewline_carriage_return).
     - For other character, the prediction becomes tentative.
   - In case action is type of `Parser::Esc_Dispatch`,
     - The prediction becomes tentative.
@@ -513,7 +513,7 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 - Sets expire frame number and expire time.
 - Iterates through the end of `the_row`, starting from current cursor column.
   - Replace current `Cell` with the next one.
-- TODO : the meaning of `unknown`, `replacement`, `active`.
+- TODO : understand the meaning of `unknown`, `replacement`, `active`.
 
 #### How to process printable character.
 
