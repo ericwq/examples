@@ -244,15 +244,16 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 
 #### PredictionEngine.cull
 
+- `flagging` : whether we are underlining predictions.
+- `srtt_trigger` : show predictions because of slow round trip time.
+- `glitch_trigger` : show predictions temporarily because of long-pending prediction.
+
+The above is the meaning of key variables. The result of `cull()` is to set up `srtt_trigger`, `glitch_trigger`, `flagging` and verify the validity of prediction.
+
 - `cull()` aka `PredictionEngine::cull()`.
 - Return early if `display_preference == Never`.
 - [Reset engine](#predictionenginereset) if `last_height` or `last_width` is different from `fb.ds`.
-- Control `srtt_trigger` with hysteresis: `send_interval > SRTT_TRIGGER_HIGH`.
-  - If `send_interval <= SRTT_TRIGGER_LOW` and `srtt_trigger` is true and `active()` returns false.
-    - `active()` aka `PredictionEngine::active()`.
-    - `active()` iterates through each cell in `overlays`.
-    - `active()` true if any cell is active.
-  - If so, sets `srtt_trigger` false.
+- [Control `srtt_trigger`](#how-to-control-srtt_trigger) with hysteresis: `send_interval > SRTT_TRIGGER_HIGH`.
 - Control underlining with hysteresis: `send_interval > FLAG_TRIGGER_HIGH`.
 - Really big glitches also activate underlining: `glitch_trigger > GLITCH_REPAIR_COUNT`.
 - Iterate through each row in `overlays`, which is type of `list<ConditionalOverlayRow>`.
@@ -273,12 +274,18 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
     - we activate the predictions even if `SRTT` is low.
   - Continue the next row.
 - If `cursors` is not empty and the [cursor validity](#conditionalcursormoveget_validity) is `IncorrectOrExpired`,
-- Clear `cursors` list if `display_preference == Experimental`, otherwise [reset engine](#predictionenginereset) and return.
+  - Clear `cursors` list if `display_preference == Experimental`,
+  - otherwise [reset engine](#predictionenginereset) and return.
 - Iterate through the `cursors` list, if cursor validity is `Pending`, erases it from the `cursors` list.
-- The result of `cull()` is to set up `srtt_trigger`, `glitch_trigger`, `flagging`.
-- `flagging` : whether we are underlining predictions.
-- `srtt_trigger` : show predictions because of slow round trip time.
-- `glitch_trigger` : show predictions temporarily because of long-pending prediction.
+
+#### How to control `srtt_trigger`
+
+- If `send_interval > FLAG_TRIGGER_HIGH` set `srtt_trigger` is true.
+- If `srtt_trigger` is true and `send_interval <= SRTT_TRIGGER_LOW` and `active()` returns false.
+  - `active()` aka `PredictionEngine::active()`.
+  - `active()` iterates through each cell in `overlays`.
+  - `active()` true if any cell is active.
+- If so, sets `srtt_trigger` false.
 
 #### PredictionEngine::reset
 
