@@ -15,6 +15,7 @@ Usage: mosh-server --version
 - [Run the server](#run_server)
 - [Serve the client](#serve)
 - [How to read from client connection](#how-to-read-from-client-connection)
+- [How to send state to client](#how-to-send-state-to-client)
 
 ### main
 
@@ -497,3 +498,13 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
   - `userbyte`,
   - `resize`.
 - [`connection->recv()`](client.md#how-to-receive-network-input) stores `TimestampedState<Network::UserStream>` in `received_states`.
+
+### How to send state to client
+
+Upon pty master is ready to read, `serve()` starts to read it.
+
+#### bytes -> Action
+
+- `serve()` reads bytes from pty master.
+- `terminal.act()` accepts string bytes parameter.
+- `parser.input()` parse each byte into `Action` and saves it in `Complete.actions`: a vector of `Action`.
