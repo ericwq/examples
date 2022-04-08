@@ -275,7 +275,10 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 - If `cursors` is not empty and the [cursor validity](#conditionalcursormoveget_validity) is `IncorrectOrExpired`,
 - Clear `cursors` list if `display_preference == Experimental`, otherwise [reset engine](#predictionenginereset) and return.
 - Iterate through the `cursors` list, if cursor validity is `Pending`, erases it from the `cursors` list.
-- The result of `cull()` is to set up `srtt_trigger`, `glitch_trigger`.
+- The result of `cull()` is to set up `srtt_trigger`, `glitch_trigger`, `flagging`.
+- `flagging` : whether we are underlining predictions.
+- `srtt_trigger` : show predictions because of slow round trip time.
+- `glitch_trigger` : show predictions temporarily because of long-pending prediction.
 
 #### PredictionEngine::reset
 
@@ -469,8 +472,7 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
     - If current byte is `escape_pass_key`, [pushes it into current state](#how-to-save-the-user-input-to-state).
     - For other character, escape key followed by anything other than "." and "^" gets sent literally.
   - Checks whether current byte is `escape_key`: "Ctrl-^", set `quit_sequence_started` accordingly.
-    - If true, set `lf_entered` to be false.
-    - If true, set the message `escape_key_help` for notification engine.
+    - If true, set `lf_entered` to be false, set the message `escape_key_help` for notification engine.
   - If current byte is the `LF`, `CR` control character, set `lf_entered` accordingly.
   - If current byte is `FF` control character, set `repaint_requested` to be true.
   - For other character, [pushes it into current state](#how-to-save-the-user-input-to-state).
@@ -491,7 +493,7 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
     - Calls [`init_cursor()`](#predictionengineinit_cursor) with frame buffer as parameter.
     - Extracts `ch` from `act->ch`.
     - If `ch` is backspace/delete: "ch == 0x7f", [process backspace character](#how-to-process-backspace-character).
-    - If "ch<=0x20" and `wcwidth(ch) != 1`, the prediction becomes tentative.
+    - If "ch<=0x20" or `wcwidth(ch) != 1`, the prediction becomes tentative.
     - For other character, [process printable character](#how-to-process-printable-character).
   - In case action is type of `Parser::Execute`,
     - If `the_byte` is `CR`, the prediction becomes tentative. [perform `CR` in frame buffer](#predictionenginenewline_carriage_return).
@@ -519,14 +521,14 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 
 ![mosh-row.svg](img/mosh-row.svg)
 
-#### How to process printable character.
+#### How to process printable character
 
 - `new_user_byte()` continues to process printable character.
 - Makes sure `cursor().col` and `cursor().row` is in range.
 - [Finds `the_row` from prediction engine](#predictionengineget_or_make_row) with specified row as parameter.
 - If cursor position in the last column, the prediction becomes tentative.
 - Reversely iterate through to the end of `cursor().col`, starting from the end of `the_row`.
-  - Mov the current `Cell` to the right: do the insert.
+  - Moves the current `Cell` to the right: do the insert.
 - Clears the cursor position `Cell`, matches renditions of character to the left, inserts the character.
 - Sets expire frame number and expire time for `cursors`.
 - Do we need to wrap?
