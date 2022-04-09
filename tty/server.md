@@ -378,8 +378,6 @@ There are a lot of `Action`. Their `act->act_on_terminal()` is different form ea
 - [Print::act_on_terminal](#printact_on_terminal)
 - [CSI_Dispatch::act_on_terminal](#csi_dispatchact_on_terminal)
 
-![mosh-parse.svg](img/mosh-parse.svg)
-
 #### Parse unicode character to action
 
 - The first `parser.input()` is actually `Parser::UTF8Parser::input()`.
@@ -394,6 +392,8 @@ There are a lot of `Action`. Their `act->act_on_terminal()` is different form ea
   - Call the [second `parser.input()`](#parse-wide-character-according-to-transition) for the wide character with the `actions` as parameter.
   - Continue the loop until all byte is parsed.
 
+![mosh-parse.svg](img/mosh-parse.svg)
+
 #### Parse wide character according to `Transition`
 
 - The second `parser.input()` is actually `Parser::Parser::input()`.
@@ -405,6 +405,8 @@ There are a lot of `Action`. Their `act->act_on_terminal()` is different form ea
 - `parser.input()` calls `append_or_delete()` if `tx.next_state` is not NULL.
 - `append_or_delete()` decides whether to push the `Action`:`tx.next_state->enter()` into `actions`.
 - `parser.input()` updates `state` with `tx.next_state`.
+
+![mosh-state.svg](img/mosh-state.svg)
 
 #### Parse wide character to `Transition`
 
