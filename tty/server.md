@@ -639,8 +639,29 @@ void UserByte::act_on_terminal(Terminal::Emulator* emu) const {
 
 Upon pty master is ready to read, `serve()` starts to read it.
 
-#### bytes -> Action
+#### bytes -> Action -> terminal
 
 - `serve()` reads bytes from pty master.
-- `terminal.act()` accepts string bytes parameter.
-- `parser.input()` parse each byte into `Action` and saves it in `Complete.actions`: a vector of `Action`.
+- `serve()` calls `terminal.act()` to change the terminal emulator.
+  - `terminal.act()` calls `parser.input()` to parse each byte into `Action` and saves it in `actions`.
+  - `terminal.act()` iterates through the `actions` vector, calling `act->act_on_terminal()` for each action.
+  - After `act->act_on_terminal()`, terminal emulator changed according to the pty master input.
+- `serve()` calls `network.set_current_state()` to set the `terminal` as `current_state`.
+
+#### terminal -> `HostBuffers::HostMessage`
+
+- `serve()` calls `network.tick()` to send current state to client.
+- `tick()` calls `current_state.diff_from()` to calculate the states difference.
+- `Complete::diff_from()` calculates difference using existing and current terminal frame buffer.
+- `Complete::diff_from()` builds `HostBuffers::HostMessage`
+- `HostBuffers::HostMessage` congtains `EchoAck`, `ResizeMessage`, `HostBytes`.
+- `Display::new_frame()` calculates `HostBytes` by considering the following scenario:
+  - bell ring, icon/window title, reverse vido, window size, cursor visibility, scroll Display,
+  - cursor location, renditions, bracketed paste mode, mouse reporting mode, mouse focus mode,
+  - mouse encoding mode
+- `Display::new_frame()` generates escape sequences to get the string representation of frame buffer.
+
+#### `HostBuffers::HostMessage` -> `TransportBuffers::Instruction`
+
+- `send_in_fragments()` transforms `HostBuffers::HostMessage` into `TransportBuffers::Instruction`.
+- For the rest of sending process, see [here](client.md#networkuserstream---transportbuffersinstruction---networkfragment).
