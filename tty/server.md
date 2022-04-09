@@ -15,6 +15,7 @@ Usage: mosh-server --version
 - [Run the server](#run_server)
 - [Serve the client](#serve)
 - [How to read from client connection](#how-to-read-from-client-connection)
+- [Act on terminal](#act-on-terminal)
 - [How to send state to client](#how-to-send-state-to-client)
 
 ### main
@@ -362,13 +363,20 @@ For `Complete`:
 - Iterate the string parameter,
 - For each character, call `parser.input()` to [parse octet into up to three actions](#parse-unicode-character-to-action).
   - Iterate the `actions`, for each action,
-  - apply action on terminal via calling `act->act_on_terminal()` with the `terminal` as parameter.
+  - [apply action to terminal](#act-on-terminal) via calling `act->act_on_terminal()` with the `terminal` as parameter.
 - Clear the `actions` via calling `actions.clear()`.
 - Return `terminal.read_octets_to_host()`.
   - `read_octets_to_host()` aka `Emulator::read_octets_to_host`.
   - `read_octets_to_host()` stores the value of `dispatch.terminal_to_host`.
   - `read_octets_to_host()` clears the value of `dispatch.terminal_to_host`.
   - `read_octets_to_host()` returns the stored value of `dispatch.terminal_to_host`.
+
+There are a lot of `Action`. Their `act->act_on_terminal()` is different form each other. The following is some examples.
+
+- [UserByte::act_on_terminal](#userbyteact_on_terminal)
+- [Resize::act_on_terminal](#resizeact_on_terminal)
+- [Print::act_on_terminal](#printact_on_terminal)
+- [CSI_Dispatch::act_on_terminal](#csi_dispatchact_on_terminal)
 
 ![mosh-parse.svg](img/mosh-parse.svg)
 
