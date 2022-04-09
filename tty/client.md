@@ -660,15 +660,14 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
 
 - `diff_from()` aka `Complete::diff_from()`.
 - `diff_from()` has a existing `Complete` as parameter.
-- `diff_from()` compares current `echo_ack` with existing one.
-- If they are different, `diff_from()` adds `EchoAck` intruction with current `echo_ack` as parameter.
-- `diff_from()` compares current `Framebuffer` with existing one.
+- Compares current `echo_ack` with existing one.
+  - If they are different, adds `EchoAck` intruction with current `echo_ack` as parameter.
+- Compares current `Framebuffer` with existing one.
 - If they are different, `diff_from()` compares the `Framebuffer` size.
   - If the `Framebuffer` size is different,
-    - `diff_from()` adds `ResizeMessage` instruction with current size as parameter.
-  - `diff_from()` calls `display.new_frame()` to [calculate the `Framebuffer` diff](#how-to-calculate-frame-buffer-difference).
-  - If `Framebuffer` diff is not empty,
-    - `diff_from()` adds `HostBytes` instruction with the diff as parameter.
+    - adds `ResizeMessage` instruction with current size as parameter.
+  - Calls `display.new_frame()` to [calculate the `Framebuffer` diff](#how-to-calculate-frame-buffer-difference).
+  - If `Framebuffer` diff is not empty, adds `HostBytes` instruction with the diff as parameter.
 - `diff_from()` returns the serialized string representation of the `HostBuffers::HostMessage` obejct.
 - `HostBuffers::HostMessage` is a proto2 message. See hostinput.proto file.
 - `HostBuffers::HostMessage` contains several `HostBuffers::Instruction`.
