@@ -215,9 +215,9 @@ In the main loop(while loop), It performs the following steps:
   - If it does read some input, call [string version of `terminal.act()`](#terminalactstring) to process the input data.
   - append the return value of `terminal.act()` to `terminal_to_host`.
   - set current state via calling `network.set_current_state()` with the `terminal` as parameter.
-- Write user input and terminal writeback to the host via calling `swrite()`.
+- Write user input and terminal write back to the host via calling `swrite()`.
   - All data collected in `terminal_to_host` is write to the pty master.
-  - TODO : why the terminal writeback?
+  - Why terminal write back? See [Terminal write back](#terminal-write-back)
 - If server doesn't receive client data over `network_timeout_ms`, set `idle_shutdown` true.
 - Upon receive `SIGUSR1` signal, check `network_signaled_timeout_ms` to decide how to set `idle_shutdown`.
   - `SIGUSR1` signal is used to kill the mosh-server gracefully.
@@ -501,7 +501,7 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
 
 ### Act on terminal
 
-The `act_on_terminal()` method for all kinds of `Action` is very different. To understand the design, you need to understand how to register function. Then we will give two examples to see the effect of `act_on_terminal()`.
+The `act_on_terminal()` method for all kinds of `Action` is different. To understand the design, first you need to understand how to register function. Then we will give you several solid examples to see the effect of `act_on_terminal()`.
 
 #### How to register function
 
@@ -522,21 +522,53 @@ static Function func_CSI_cursormove_A(CSI, "A", CSI_cursormove);
 static Function func_CSI_cursormove_B(CSI, "B", CSI_cursormove);
 static Function func_CSI_cursormove_C(CSI, "C", CSI_cursormove);
 static Function func_CSI_cursormove_D(CSI, "D", CSI_cursormove);
-
+static Function func_CSI_DSR(CSI, "n", CSI_DSR);
+…
 static Function func_Ctrl_BEL(CONTROL, "\x07", Ctrl_BEL);
 static Function func_Ctrl_LF(CONTROL, "\x0a", Ctrl_LF);
-static Function func_Ctrl_IND(CONTROL, "\x84", Ctrl_LF);
-static Function func_Ctrl_VT(CONTROL, "\x0b", Ctrl_LF);
-static Function func_Ctrl_FF(CONTROL, "\x0c", Ctrl_LF);
-
+…
 static Function func_Esc_DECSC(ESCAPE, "7", Esc_DECSC);
 static Function func_Esc_DECRC(ESCAPE, "8", Esc_DECRC);
-……
+…
 ```
 
 #### Print::act_on_terminal
 
 - `act_on_terminal()` calls `emu->print()` to do the job, with current action as parameter.
+- `emu->print()` aka `Emulator::print()`.
+- Check for printing ISO 8859-1 first, to get the character width.
+- Get the cursor position cell from frame buffer: `this_cell`.
+- Check the character width:
+- In case of normal character or wide character:
+  - If it's wrap mode or should wrap,
+    - set the cursor row wrap;
+    - move to column 0 in `fb.ds`;
+    - scroll the row by one;
+    - `this_cell` is NULL.
+  - If wrap mode is true, character width is two, cursor column reaches the screen width.
+    - reset the `this_cell`;
+    - set the cursor row wrap;
+    - move to column 0 in `fb.ds`;
+    - scroll the row by one;
+    - `this_cell` is NULL.
+  - If it's insert mode in `fb.ds`,
+    - insert cell according to the character width;
+    - `this_cell` is NULL.
+  - Get the cursor position cell from frame buffer: `this_cell`. If `this_cell` is NULL.
+  - Reset the `this_cell`;
+  - Append the character;
+  - Set cell wide;
+  - Apply rendition to cell.
+  - If it's wide character, erase overlapped cell.
+  - Move cursor to next position in `fb.ds`.
+- In case of combining character:
+  - Get the combining cell from frame buffer: `combining_cell`.
+  - If cell starts with combining character,
+    - set cell fall back;
+    - move cursor to next position in `fb.ds`.
+  - If cell is not full (32 is the limit by mosh),
+    - append the character to `combining_cell`.
+- For other case, just ignore it.
 
 #### CSI_Dispatch::act_on_terminal
 
@@ -554,13 +586,44 @@ static Function func_Esc_DECRC(ESCAPE, "8", Esc_DECRC);
 - If `dispatch()` does not find the `Function` in `CSI` map.
   - it sets `fb->ds.next_print_will_wrap` false.
 
-If the escape sequence is "ESC [ D", `CSI_cursormove()` will be called.
+If the escape sequence is "ESC [ D", `func_CSI_cursormove_D` will be found, `CSI_cursormove()` will be called.
 
 - `CSI_cursormove()` calls `dispatch->getparam()` to get the `num`, default value is 1.
 - `CSI_cursormove()` calls `dispatch->get_dispatch_chars()` to get the command.
 - `CSI_cursormove()` calls `fb->ds.move_col()` to move the cursor.
 
+If the escape sequence is "ESC [ 5 n", `func_CSI_DSR` will be found. `CSI_DSR()` will be called.
+
+- `CSI_DSR()` calls `dispatch->getparam()` to get the first parsed parameter: which is int 5 in this case.
+- `CSI_DSR()` prepares the responding escape sequence according to the parameter 5.
+- The responding sequence is "ESC [ 0 n".
+- The responding sequence is append to `dispatch->terminal_to_host`.
+- For the request: "ESC [ 6 n", the response is "ESC [ r ; c R", Report Cursor Position (CPR).
+
 The terminal emulator works like a real terminal emulator. It responds the escape sequence with proper action.
+
+#### Terminal write back
+
+The following `Function` write escape sequence response to the `dispatch->terminal_to_host`.
+
+```cpp
+/* device attributes */
+static Function func_CSI_DA(CSI, "c", CSI_DA);
+
+/* secondary device attributes */
+static Function func_CSI_SDA(CSI, ">c", CSI_SDA);
+
+/* device status report -- e.g., cursor position (used by resize) */
+static Function func_CSI_DSR(CSI, "n", CSI_DSR);
+```
+
+Please remember: `UserByte.act_on_terminal()` also write to `dispatch->terminal_to_host`.
+
+```cpp
+void UserByte::act_on_terminal(Terminal::Emulator* emu) const {
+	emu->dispatch.terminal_to_host.append(emu->user.input(this, emu->fb.ds.application_mode_cursor_keys));
+}
+```
 
 ### How to send state to client
 
