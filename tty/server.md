@@ -499,6 +499,69 @@ Upon server network socket is ready to read, `connection->recv()` starts to read
   - `resize`.
 - [`connection->recv()`](client.md#how-to-receive-network-input) stores `TimestampedState<Network::UserStream>` in `received_states`.
 
+### Act on terminal
+
+The `act_on_terminal()` method for all kinds of `Action` is very different. To understand the design, you need to understand how to register function. Then we will give two examples to see the effect of `act_on_terminal()`.
+
+#### How to register function
+
+- There is a singleton `DispatchRegistry`, which is a global dispatch registry.
+- `DispatchRegistry` contains three map, which is type of `map<std::string, Function>`.
+- `DispatchRegistry` has `escape` map, `CSI` map, `control` map.
+- `get_global_dispatch_registry()` aka `Terminal::get_global_dispatch_registry`.
+- `get_global_dispatch_registry()` returns the `DispatchRegistry` singleton object.
+- The constructor of `Function` class insert a pair of `string,Function` into the specified map type.
+- There are a lot of `Function` instances registered in `DispatchRegistry`.
+
+See the following example to get a solid understanding. The last parameter of `Function` constructor is a function. It has a `Framebuffer` parameter and a `Dispatcher` parameter and returns void.
+
+```cpp
+static Function func_CSI_EL(CSI, "K", CSI_EL);
+static Function func_CSI_ED(CSI, "J", CSI_ED);
+static Function func_CSI_cursormove_A(CSI, "A", CSI_cursormove);
+static Function func_CSI_cursormove_B(CSI, "B", CSI_cursormove);
+static Function func_CSI_cursormove_C(CSI, "C", CSI_cursormove);
+static Function func_CSI_cursormove_D(CSI, "D", CSI_cursormove);
+
+static Function func_Ctrl_BEL(CONTROL, "\x07", Ctrl_BEL);
+static Function func_Ctrl_LF(CONTROL, "\x0a", Ctrl_LF);
+static Function func_Ctrl_IND(CONTROL, "\x84", Ctrl_LF);
+static Function func_Ctrl_VT(CONTROL, "\x0b", Ctrl_LF);
+static Function func_Ctrl_FF(CONTROL, "\x0c", Ctrl_LF);
+
+static Function func_Esc_DECSC(ESCAPE, "7", Esc_DECSC);
+static Function func_Esc_DECRC(ESCAPE, "8", Esc_DECRC);
+……
+```
+
+#### Print::act_on_terminal
+
+- `act_on_terminal()` calls `emu->print()` to do the job, with current action as parameter.
+
+#### CSI_Dispatch::act_on_terminal
+
+- `act_on_terminal()` calls `emu->CSI_dispatch()` to do the job, with current action as parameter.
+- `emu->CSI_dispatch()` aka `Emulator::CSI_dispatch()`.
+- `CSI_dispatch()` calls `dispatch.dispatch()` to do the job, with `CSI`, action and `Framebuffer` as parameter.
+- `dispatch.dispatch()` aka `Dispatcher::dispatch()`.
+- `dispatch()` duplicates the action and saves it in `Dispatcher.dispatch_chars` via calling `collect()`.
+- `dispatch()` find the `CSI` map in singleton `DispatchRegistry` object.
+- `dispatch()` creates `key` with the `act->ch`.
+- `dispatch()` looks up the `key` in `CSI` map.
+- If `dispatch()` finds the `Function` with the specified `key`,
+  - it sets `fb->ds.next_print_will_wrap` according to the value of `Function.clears_wrap_state` field.
+  - it call the `Function` with frame buffer and `Dispatcher` object as parameters.
+- If `dispatch()` does not find the `Function` in `CSI` map.
+  - it sets `fb->ds.next_print_will_wrap` false.
+
+If the escape sequence is "ESC [ D", `CSI_cursormove()` will be called.
+
+- `CSI_cursormove()` calls `dispatch->getparam()` to get the `num`, default value is 1.
+- `CSI_cursormove()` calls `dispatch->get_dispatch_chars()` to get the command.
+- `CSI_cursormove()` calls `fb->ds.move_col()` to move the cursor.
+
+The terminal emulator works like a real terminal emulator. It responds the escape sequence with proper action.
+
 ### How to send state to client
 
 Upon pty master is ready to read, `serve()` starts to read it.
