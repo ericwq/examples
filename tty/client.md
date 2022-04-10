@@ -18,7 +18,7 @@ Usage: mosh-client --version
 - [STMClient::main](#stmclientmain)
 - [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
 - [How to receive state from server](#how-to-receive-state-from-server)
-- TODO : using QUIC for transport?
+- [How does the notification engine decide to show message?](#how-does-the-notification-engine-decide-to-show-message)
 
 ### main
 
@@ -946,10 +946,16 @@ Upon network sockets is ready to read, `main()` calls `process_network_input()` 
 - The escape sequences received from server is the result of frame buffer after applying the above instructions.
 - `network->recv()` add the new state to received states.
 
-### How does the prediction work?
+### How does the prediction engine work?
 
 - TODO : How does the prediction work?
 
-### How does the notification decide to show message?
+### How does the notification engine decide to show message?
 
-- TODO : How does the notification decide to show message?
+- Every time `STMClient::output_new_frame()` is called to show the frame buffer.
+- `overlays.apply()` is called to apply local overlay.
+- `overlays.apply()` calls `notifications.adjust_message()` to clear expired message.
+- `overlays.apply()` calls `notifications.apply()` to show the message.
+- Before `notifications.apply()` decide to show the message,
+- `notifications.apply()` checks the last word from server time and last ack state time, to decide wheather to show the message.
+- If the message is empty, `notifications.apply()` will not show the message either.
