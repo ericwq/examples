@@ -17,6 +17,7 @@ Usage: mosh-client --version
 - [STMClient::init](#stmclientinit)
 - [STMClient::main](#stmclientmain)
 - [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
+- [How to receive state from server](#how-to-receive-state-from-server)
 
 ### main
 
@@ -924,3 +925,22 @@ When it's time to send the `Network::UserStream` to remote server:
   - `text`: contains `timestamp`, `timestamp_reply` and `payload` fields in `Network::Packet`.
 - [`Connection::send()`](#how-to-send-a-packet) encrypts `Crypto::Message`.
 - [`Connection::send()`](#how-to-send-a-packet) sents `Crypto::Message` to remote server in UDP datagram.
+
+### How to receive state from server
+
+Upon network sockets is ready to read, `main()` calls `process_network_input()` to process it.
+
+#### bytes -> `TransportBuffers:Instruction`
+
+- `process_network_input()` calls `network->recv()` to do the job.
+- `network->recv()` calls `connection.recv()` to read string representation from socket. See [here](server.md#cryptomessage---networkpacket---networkfragment) for detail.
+- `network->recv()` calls `fragments.get_assembly()` to build the `TransportBuffers:Instruction` object.
+
+#### `TransportBuffers:Instruction` -> `HostBuffers::HostMessage` -> terminal
+
+- `network->recv()` finds the reference state (old state) from received states.
+- `network->recv()` [apply `Instruciton` difference](server.md#apply_string) to the reference state to generate new state.
+- `HostBuffers::HostMessage` contains [difference escape sequences](server.md#terminal---difference-escape-sequence---hostbuffershostmessage) for frame buffer.
+- The escape sequences received from pty master is the instructions send from remote application
+- The escape sequences received from server is the result of frame buffer after applying the above instructions.
+- `network->recv()` add the new state to received states.
