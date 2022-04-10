@@ -19,6 +19,7 @@ Usage: mosh-client --version
 - [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
 - [How to receive state from server](#how-to-receive-state-from-server)
 - [How does the notification engine decide to show message?](#how-does-the-notification-engine-decide-to-show-message)
+- [How does the prediction engine work?](#how-does-the-prediction-engine-work)
 
 ### main
 
@@ -253,6 +254,7 @@ In `client.main()`, `main_init()` is called to init the `mosh` client.
 The above is the meaning of key variables. The result of `cull()` is to set up `srtt_trigger`, `glitch_trigger`, `flagging` and verify the validity of prediction.
 
 - `cull()` aka `PredictionEngine::cull()`.
+- `cull()` accepts frame buffer as parameter.
 - Return early if `display_preference == Never`.
 - [Reset engine](#predictionenginereset) if `last_height` or `last_width` is different from `fb.ds`.
 - [Control `srtt_trigger`](#how-to-control-srtt_trigger) with hysteresis: `send_interval > SRTT_TRIGGER_HIGH`.
@@ -514,6 +516,7 @@ See [this post](https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIesca
     - If `the_byte` is left arrow, move the cursor in frame buffer.
     - For other character, the prediction becomes tentative.
   - For other action type, deletes current action.
+- `new_user_byte()` checks the validity of prediction, manipulates overlays to reflect the change.
 
 #### How to process backspace character
 
@@ -946,16 +949,32 @@ Upon network sockets is ready to read, `main()` calls `process_network_input()` 
 - The escape sequences received from server is the result of frame buffer after applying the above instructions.
 - `network->recv()` add the new state to received states.
 
-### How does the prediction engine work?
-
-- TODO : How does the prediction work?
-
 ### How does the notification engine decide to show message?
 
 - Every time `STMClient::output_new_frame()` is called to show the frame buffer.
 - `overlays.apply()` is called to apply local overlay.
 - `overlays.apply()` calls `notifications.adjust_message()` to clear expired message.
-- `overlays.apply()` calls `notifications.apply()` to show the message.
+- `overlays.apply()` calls `notifications.apply()` to [show the message](#notificationengineapply).
 - Before `notifications.apply()` decide to show the message,
-- `notifications.apply()` checks the last word from server time and last ack state time, to decide wheather to show the message.
+- `notifications.apply()` checks the last word from server time and last ack state time, to decide whether to show the message.
 - If the message is empty, `notifications.apply()` will not show the message either.
+
+### How does the prediction engine work?
+
+#### user keystroke -> overlays
+
+- Upon user keystroke is ready to read, `process_user_input()` is called to process it.
+- `process_user_input()` reads the user keystroke from `STDIN_FILENO`.
+- `process_user_input()` calls `overlays.get_prediction_engine().new_user_byte()` for each byte.
+- `PredictionEngine::new_user_byte()` [checks the validity of the prediction](#predictionenginenew_user_byte) and manipulates `overlays` to reflect the change.
+- Now, all the change happens in `overlays` or `cursors`.
+- At the same time, the user keystrokes is send to the server through network socket.
+
+#### overlays -> show up
+
+- When it's time to show the frame buffer for diasplay,`output_new_frame()` is called to perfrm the display.
+- `output_new_frame()` calls `overlays.apply()` to apply local overlay.
+- `overlays.apply()` calls `predictions.cull()` to [check the validity of the prediction](#predictionenginecull).
+- `overlays.apply()` calls `predictions.apply()` to [manipulate the frame buffer](#predictionengineapply).
+- Here if condition is ready, e.g. `flagging` is true, cell is `active`… underline prediction show up.
+- If the `overlays` is incorrect, the contents of `overlays` will be reset by `predictions.cull()`.
