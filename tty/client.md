@@ -18,6 +18,7 @@ Usage: mosh-client --version
 - [STMClient::main](#stmclientmain)
 - [How to send keystroke to remote server](#how-to-send-keystroke-to-remote-server)
 - [How to receive state from server](#how-to-receive-state-from-server)
+- TODO : using QUIC for transport?
 
 ### main
 
@@ -944,3 +945,11 @@ Upon network sockets is ready to read, `main()` calls `process_network_input()` 
 - The escape sequences received from pty master is the instructions send from remote application
 - The escape sequences received from server is the result of frame buffer after applying the above instructions.
 - `network->recv()` add the new state to received states.
+
+### How does the prediction work?
+
+- TODO : How does the prediction work?
+
+### How does the notification decide to show message?
+
+- TODO : How does the notification decide to show message?
