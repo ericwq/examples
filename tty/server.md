@@ -380,6 +380,8 @@ There are a lot of `Action`. Their `act->act_on_terminal()` is different form ea
 - [Print::act_on_terminal](#printact_on_terminal)
 - [CSI_Dispatch::act_on_terminal](#csi_dispatchact_on_terminal)
 
+![mosh-term.svg](img/mosh-term.svg)
+
 #### Parse unicode character to action
 
 - The first `parser.input()` is actually `Parser::UTF8Parser::input()`.
