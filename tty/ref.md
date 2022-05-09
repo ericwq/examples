@@ -88,6 +88,25 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 % bear -- make
 ```
 
+### zutty
+
+[zutty project](https://github.com/tomszilagyi/zutty), terminal emulator rendering through OpenGL ES Compute Shaders]
+
+```sh
+% ssh root@localhost
+% apk add libxmu-dev mesa-dev
+```
+
+switch to the ide user of `nvide`.
+
+```sh
+% ssh ide@localhost
+% git clone https://github.com/tomszilagyi/zutty.git
+% cd zutty
+% ./waf configure
+% bear -- ./waf
+```
+
 ## reference doc
 
 How the terminal works? Who is responsible for terminal rendering? Does GPU-rendering in terminal matter?
