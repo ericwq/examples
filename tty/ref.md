@@ -94,7 +94,7 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 
 ```sh
 % ssh root@localhost
-% apk add libxmu-dev mesa-dev
+% apk add libxmu-dev mesa-dev freetype-dev
 ```
 
 switch to the ide user of `nvide`.
@@ -103,6 +103,25 @@ switch to the ide user of `nvide`.
 % ssh ide@localhost
 % git clone https://github.com/tomszilagyi/zutty.git
 % cd zutty
+% curl -O https://raw.githubusercontent.com/socrocket/core/master/core/waf/clang_compilation_database.py
+```
+
+Please skip this step. It doesn't work as expected.
+
+- [Compilation database](https://docs.embold.io/compilation-database/)
+- modify the `wscript` file, add the following line to it according to [Compilation database](https://sarcasm.github.io/notes/dev/compilation-database.html#waf)
+
+```python
+def configure(conf):
+    conf.load('compiler_cxx')
+    …
+    conf.load('clang_compilation_database')
+```
+
+run the following commands. Note the place of `build/compile_commands.json`.
+
+```sh
+% ./waf distclean
 % ./waf configure
 % bear -- ./waf
 ```
