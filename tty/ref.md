@@ -74,7 +74,7 @@ now you can check the source code of `st` via [nvide](https://github.com/ericwq/
 
 ```sh
 % ssh root@localhost
-# apk add ncurses-dev zlib-dev openssl1.1-compat-dev perl-dev perl-io-tty protobuf-dev automake autoconf libtool gzip
+# apk add ncurses-dev zlib-dev openssl-dev perl-dev perl-io-tty protobuf-dev automake autoconf libtool gzip
 ```
 
 switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https://mosh.org/mosh-1.3.2.tar.gz)
