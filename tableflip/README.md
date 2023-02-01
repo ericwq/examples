@@ -4,6 +4,17 @@ Let's discuss the using of [tableflip](https://github.com/cloudflare/tableflip) 
 
 Please check the `tcp.go` to see the demo code of using `tableflip`. Here we mainly discuss the using of `tableflip`. About the design of `tableflip` please see [Understand tableflip design](design.md)
 
+## Conclusion about zero downtime upgrade
+
+- short lived socket: opened by client, read/write to the socket, then close it.
+  - nc client(see the following demo) is used to test short lived socket.
+  - short lived socket has no requirement for zero down time upgrade.
+- long lived socket: opened by client, client use it to communicate with server for several round-trip.
+  - client/main.go is used to test long lived socket.
+  - long lived socket has some requirement for zero down time upgrade:
+  - the client should check the network error and reopen the connection if necessary.
+  - the server should stop response at application boundary defined by developer.
+
 ## Demo steps
 
 Run the following command to build the binary.
