@@ -12,13 +12,24 @@ import (
 	"time"
 )
 
-var host = flag.String("host", "localhost", "host")
-var port = flag.String("port", "8080", "port")
+var (
+	host = flag.String("host", "localhost", "host")
+	port = flag.String("port", "8080", "port")
+)
 
+// The client is used to test the long lived socket case:
+// long lived socket: opened by client, client use it to communicate with server for several times.
+// long lived socket has some requirement for zero down time upgrade:
+// - the client should check the network error and reopen the connection if necessary.
+// - the server should stop response at application boundary defined by developer.
+//
+// nc client is used to test the short lived socket case:
+// short lived socket: opened by client, read/write to it and close it.
+// short lived socket has no requirement for zero down time upgrade.
 func main() {
 	flag.Parse()
 	rand.Seed(42)
-	//var wg sync.WaitGroup
+	// var wg sync.WaitGroup
 
 	// short connection
 	if len(os.Args) > 1 {
@@ -29,38 +40,43 @@ func main() {
 				os.Exit(1)
 			}
 			defer conn.Close()
-			//fmt.Println("Connecting to " + *host + ":" + *port)
+			// fmt.Println("Connecting to " + *host + ":" + *port)
 
-			//wg.Add(1)
-			handleWrite(conn, nil)
-			//go handleRead(conn, &wg)
-			time.Sleep(time.Millisecond * 100)
+			// wg.Add(1)
+			for i := 0; i < 10; i++ {
+				handleWrite(conn, i, nil)
+				time.Sleep(time.Millisecond * 1)
+				handleRead(conn, nil)
+			}
 		}
-		//wg.Wait()
+		// wg.Wait()
 	} else {
 		fmt.Println("no argument.")
-
 	}
 }
 
-func handleWrite(conn net.Conn, wg *sync.WaitGroup) {
-	//defer wg.Done()
+func handleWrite(conn net.Conn, idx int, wg *sync.WaitGroup) error {
+	// defer wg.Done()
 
-	_, e := conn.Write([]byte("hello " + strconv.Itoa(rand.Intn(9)) + "\n"))
-	if e != nil {
-		fmt.Println("Error to send message because of ", e.Error())
+	_, err := conn.Write([]byte("hello " + strconv.Itoa(idx) + "\n"))
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
+
+	return nil
 }
 
-func handleRead(conn net.Conn, wg *sync.WaitGroup) {
-	defer wg.Done()
+func handleRead(conn net.Conn, wg *sync.WaitGroup) error {
+	// defer wg.Done()
 	reader := bufio.NewReader(conn)
-	for i := 1; i <= 10; i++ {
-		line, err := reader.ReadString(byte('\n'))
-		if err != nil {
-			fmt.Print("Error to read message because of ", err)
-			return
-		}
-		fmt.Print(line)
+	// for i := 1; i <= 10; i++ {
+	_, err := reader.ReadString(byte('\n'))
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
+	// fmt.Print(line)
+	// }
+	return nil
 }

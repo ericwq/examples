@@ -9,7 +9,4 @@ require (
 	golang.org/x/sys v0.0.0-20220318055525-2edf467146b5
 )
 
-require (
-	github.com/gdamore/tcell/v2 v2.5.1 // indirect
-	golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect
-)
+require golang.org/x/term v0.0.0-20201210144234-2321bbc49cbf // indirect

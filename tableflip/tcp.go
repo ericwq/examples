@@ -48,7 +48,6 @@ func Example_tcpServer() {
 	upg, err := tableflip.New(tableflip.Options{
 		PIDFile: *pidFile,
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +60,7 @@ func Example_tcpServer() {
 		for s := range sig {
 			switch s {
 			case syscall.SIGHUP:
-				//log.Println("got message SIGHUP.")
+				// log.Println("got message SIGHUP.")
 				err := upg.Upgrade()
 				if err != nil {
 					log.Println("upgrade failed:", err)
@@ -75,7 +74,6 @@ func Example_tcpServer() {
 	}()
 
 	ln, err := upg.Listen("tcp", *listenAddr)
-
 	if err != nil {
 		log.Fatalln("Can't listen:", err)
 	}
@@ -104,7 +102,7 @@ func Example_tcpServer() {
 				conn, err := lis.Accept()
 				if err != nil {
 					if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-						//log.Println("accept time out")
+						// log.Println("accept time out")
 					} else {
 						log.Println("accept error", err)
 					}
@@ -131,31 +129,31 @@ func Example_tcpServer() {
 	wg.Wait()
 	log.Println("finish the old process.")
 
-	//log.Println("Exit() pause for a moment.")
-	//time.Sleep(time.Second * 2)
+	// log.Println("Exit() pause for a moment.")
+	// time.Sleep(time.Second * 2)
 }
 
 func handleConnection(conn net.Conn, quit chan struct{}) {
-
 	defer conn.Close()
 
 	var buf []byte = make([]byte, 32)
-	//log.Println("handle connection")
+	// log.Println("handle connection")
+	count := 10
 ReadLoop:
-	for {
+	for i := 0; i < count; i++ {
 		select {
 		case <-quit:
-			return
+			break ReadLoop
 		default:
 
 			// set read time out
 			conn.SetDeadline(time.Now().Add(200 * time.Millisecond))
 
-			//read message from the client and print it on screen
+			// read message from the client and print it on screen
 			n, err := conn.Read(buf)
 			if err != nil {
 				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-					//log.Println("read time out")
+					// log.Println("read time out")
 					continue ReadLoop
 				} else if err != io.EOF {
 					log.Println("read error", err)
@@ -164,11 +162,13 @@ ReadLoop:
 			}
 
 			if n == 0 {
-				//log.Printf("done connection.")
+				log.Printf("done connection.")
 				return
 			}
 			msg := strings.ReplaceAll(string(buf), "\n", "")
+			conn.Write(buf)
 			log.Printf("receive message from [%s]:[%s]", conn.RemoteAddr().String(), msg)
 		}
 	}
+	log.Printf("done w/ message from [%s]", conn.RemoteAddr().String())
 }
