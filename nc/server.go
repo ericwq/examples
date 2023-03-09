@@ -14,8 +14,14 @@ func ck(err error) {
 	}
 }
 
-// nc localhost 8981 -u -e echo fine2
-// ssh ide@localhost nc localhost 8981 -u -e echo fine2
+// check listening udp port on system
+// % netstat -ul
+//
+// send udp request and read reply
+// % echo "hello world" | nc localhost 8981 -u -w 1
+//
+// send udp request to remote host
+// % ssh ide@localhost  "echo 'open aprilsh' | nc localhost 8981 -u -w 1"
 func serve(port string) (done chan bool) {
 	local_addr, err := net.ResolveUDPAddr("udp", port)
 	ck(err)
@@ -33,8 +39,9 @@ func serve(port string) (done chan bool) {
 				fmt.Println("Error: ", err)
 				continue
 			}
-			fmt.Println("Received ", strings.TrimSpace(string(buf[0:n])), " from ", addr)
+			fmt.Printf("Received %q from %s\n", strings.TrimSpace(string(buf[0:n])), addr)
 			// rx <- buf[0:n]
+			conn.WriteToUDP([]byte("#"), addr) // add response prefix
 			conn.WriteToUDP(buf[0:n], addr)
 		}
 	}()
