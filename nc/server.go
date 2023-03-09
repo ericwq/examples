@@ -15,6 +15,7 @@ func ck(err error) {
 }
 
 // nc localhost 8981 -u -e echo fine2
+// ssh ide@localhost nc localhost 8981 -u -e echo fine2
 func serve(port string) (done chan bool) {
 	local_addr, err := net.ResolveUDPAddr("udp", port)
 	ck(err)
