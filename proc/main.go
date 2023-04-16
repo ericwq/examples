@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
-	// "os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -45,6 +46,7 @@ func main() {
 
 	shellNotWorking()
 	cmdStartWait()
+	shellStart()
 }
 
 func cmdStartWait() {
@@ -62,7 +64,7 @@ func cmdStartWait() {
 		fmt.Println(time.Now().UnixMilli(), "-- Process state: ", cmd.ProcessState)
 		err = cmd.Process.Kill()
 		if err != nil {
-			fmt.Println("-- errors:",err)
+			fmt.Println("-- errors:", err)
 		}
 		fmt.Println(time.Now().UnixMilli(), "-- Process killed with PID:", cmd.Process.Pid)
 	})
@@ -99,4 +101,88 @@ func shellNotWorking() {
 	fmt.Println("cmd wait.")
 	cmd.Wait()
 	fmt.Println("cmd wait finished.", cmd.Process.Pid)
+}
+
+// extract shell name from shellPath and prepend '-' to the returned shell name
+func getShellNameFrom(shellPath string) (shellName string) {
+	shellSplash := strings.LastIndex(shellPath, "/")
+	if shellSplash == -1 {
+		shellName = shellPath
+	} else {
+		shellName = shellPath[shellSplash+1:]
+	}
+
+	// prepend '-' to make login shell
+	shellName = "-" + shellName
+
+	return
+}
+
+// get current user home directory
+func getHomeDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+
+	return home
+}
+
+// http://technosophos.com/2014/07/11/start-an-interactive-shell-from-within-go.html
+// it turns out to be that exec.Cmd can't be used to start shell.
+func shellStart() {
+	fmt.Printf("\nshellStart:\n")
+	// Get the current user.
+	// me, err := user.Current()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// Get the current working directory.
+	cwd := getHomeDir()
+
+	// Set an environment variable.
+	os.Setenv("SOME_VAR", "1")
+
+	// Transfer stdin, stdout, and stderr to the new process
+	// and also set target directory for the shell to start in.
+	pa := os.ProcAttr{
+		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
+		Dir:   cwd,
+	}
+
+	// Start up a new shell.
+	// Note that we supply "login" twice.
+	// -fpl means "don't prompt for PW and pass through environment."
+	fmt.Println("Starting a new interactive shell")
+
+	// prepare shell path and parameters
+	shellPath := os.Getenv("SHELL")
+	argv := getShellNameFrom(shellPath)
+	fmt.Println("shell path: ", shellPath, " argv:", argv)
+
+	proc, err := os.StartProcess(shellPath, []string{argv}, &pa)
+	if err != nil {
+		panic(err)
+	}
+
+	// kill the shell process
+	time.AfterFunc(10*time.Millisecond, func() {
+		fmt.Println("")
+		fmt.Println("-- kill the process with PID:", proc.Pid)
+		err = proc.Kill()
+		if err != nil {
+			fmt.Println("-- errors:", err)
+		}
+		fmt.Println("-- Process killed with PID:", proc.Pid)
+	})
+
+	// Wait until user exits the shell
+	state, err := proc.Wait()
+	if err != nil {
+		panic(err)
+	}
+
+	// Keep on keepin' on.
+	fmt.Printf("Exited shell: %s\n", state.String())
 }
