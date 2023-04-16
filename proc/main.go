@@ -43,17 +43,60 @@ func main() {
 		I'm not sure how useful that would be.
 	*/
 
-	cmd := exec.Command("sleep", "3")
+	shellNotWorking()
+	cmdStartWait()
+}
 
-	if err := cmd.Start(); err != nil {
-		panic(err)
+func cmdStartWait() {
+	fmt.Printf("\ncmdStartWait:\n")
+	cmd := exec.Command("sleep", "5000")
+	// cmd := exec.Command("sh", "-sh")
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
-	fmt.Println("PID:", cmd.Process.Pid)
-	go terminate(cmd.Process.Pid)
-	if state, err := cmd.Process.Wait(); err != nil {
-		panic(err)
-	} else {
-		fmt.Println("Success:", state.Success(), state)
+	fmt.Println(time.Now().UnixMilli(), "Process started ", cmd, " PID:", cmd.Process.Pid)
+	time.AfterFunc(40*time.Millisecond, func() {
+		fmt.Println(time.Now().UnixMilli(), "-- Process state: ", cmd.ProcessState)
+		err = cmd.Process.Kill()
+		if err != nil {
+			fmt.Println("-- errors:",err)
+		}
+		fmt.Println(time.Now().UnixMilli(), "-- Process killed with PID:", cmd.Process.Pid)
+	})
+
+	fmt.Println(time.Now().UnixMilli(), "cmd Wait.")
+	cmd.Wait()
+	fmt.Println(time.Now().UnixMilli(), "cmd Wait finished: ", cmd.Process.Pid)
+}
+
+func shellNotWorking() {
+	fmt.Printf("\nshellNotWorking:\n")
+	cmd := exec.Command("sh", "-sh")
+	// cmd := exec.Command("sleep", "5000")
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+	fmt.Println("cmd start ", cmd, " PID:", cmd.Process.Pid)
+	fmt.Println("cmd state: ", cmd.ProcessState)
+
+	timer1 := time.NewTimer(time.Duration(200) * time.Millisecond)
+	go func() {
+		<-timer1.C
+		fmt.Println("  Process state:", cmd.ProcessState)
+		fmt.Println("  Process killing")
+		err = cmd.Process.Kill()
+		if err != nil {
+			fmt.Println("  errors:", err)
+		}
+		fmt.Println("  Process killed with PID:", cmd.Process.Pid)
+	}()
+
+	fmt.Println("cmd wait.")
+	cmd.Wait()
+	fmt.Println("cmd wait finished.", cmd.Process.Pid)
 }
