@@ -126,6 +126,25 @@ run the following commands. Note the place of `build/compile_commands.json`.
 % bear -- ./waf
 ```
 
+### utmps
+
+[utmps](https://skarnet.org/software/utmps/), a C project, adding dependency packages with root privilege.
+
+```sh
+% ssh root@localhost
+% apk add skalibs-dev
+```
+switch to the ide user of `nvide`.
+
+```sh
+% ssh ide@localhost
+% git clone https://github.com/tomszilagyi/zutty.git
+% git clone git://git.skarnet.org/utmps
+% cd utmps
+% ./configure
+% bear -- make
+```
+
 ## reference doc
 
 How the terminal works? Who is responsible for terminal rendering? Does GPU-rendering in terminal matter?
