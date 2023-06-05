@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/cloudflare/tableflip v1.2.2
 	github.com/creack/pty v1.1.17
+	github.com/davecgh/go-spew v1.1.1
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	golang.org/x/sys v0.0.0-20220318055525-2edf467146b5
 )
