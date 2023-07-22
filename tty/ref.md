@@ -68,9 +68,9 @@ switch to the ide user of `nvide`.
 
 now you can check the source code of `st` via [nvide](https://github.com/ericwq/nvide).
 
-### mosh 1.3.2
+### mosh
 
-[mosh - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege.
+[mosh 1.3.2 - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege.
 
 ```sh
 % ssh root@localhost
@@ -90,11 +90,11 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 
 ### mosh 1.4
 
-[mosh - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege.
+[mosh 1.4 - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege. Note the following script only works on `alpine:3.18`. `alpine:edge` will cause protobuf compile problem.
 
 ```sh
 % ssh root@localhost
-# apk add  build-base autoconf automake gzip libtool ncurses-dev openssl-dev>3 perl-dev perl-io-tty protobuf-dev zlib-dev perl-doc
+# apk add build-base autoconf automake gzip libtool ncurses-dev openssl-dev>3 perl-dev perl-io-tty protobuf-dev zlib-dev perl-doc
 ```
 
 switch to the ide user of `nvide`.
