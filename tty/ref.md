@@ -68,7 +68,7 @@ switch to the ide user of `nvide`.
 
 now you can check the source code of `st` via [nvide](https://github.com/ericwq/nvide).
 
-### mosh
+### mosh 1.3.2
 
 [mosh - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege.
 
@@ -84,6 +84,26 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 % curl -O https://mosh.org/mosh-1.3.2.tar.gz
 % tar xvzf mosh-1.3.2.tar.gz
 % cd mosh-1.3.2
+% ./configure
+% bear -- make
+```
+
+### mosh 1.4
+
+[mosh - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege.
+
+```sh
+% ssh root@localhost
+# apk add  build-base autoconf automake gzip libtool ncurses-dev openssl-dev>3 perl-dev perl-io-tty protobuf-dev zlib-dev perl-doc
+```
+
+switch to the ide user of `nvide`.
+
+```sh
+% ssh ide@localhost
+% git clone https://github.com/mobile-shell/mosh.git
+% cd mosh
+% ./autogen.sh
 % ./configure
 % bear -- make
 ```
