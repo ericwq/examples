@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"log/syslog"
 	"net"
 
 	"golang.org/x/exp/slog"
@@ -42,19 +44,25 @@ func main() {
 	*/
 	writer, err := net.Dial("udp", "localhost:514")
 	if err != nil {
+		fmt.Println(err)
+	}
+
+	if writer != nil {
+		// defer writer.Close()
+		textHandler := slog.NewTextHandler(writer, nil)
+		logger := slog.New(textHandler)
+
+		logger.Warn("from slog!")
+		logger.Info("be careful about 70 handcup!")
+	}
+
+	// here is the syslog sample
+	s, err := syslog.New(syslog.LOG_WARNING|syslog.LOG_LOCAL7, "aprilsh")
+	if err != nil {
 		log.Fatal(err)
 	}
-	textHandler := slog.NewTextHandler(writer, nil)
-	logger := slog.New(textHandler)
 
-	logger.Warn("be careful!")
-	logger.Info("Go is an excellet language!")
-	/*
-		s, err := syslog.New(syslog.LOG_WARNING|syslog.LOG_LOCAL7, "test")
-		if err != nil {
-			log.Fatal(err)
-		}
+	s.Warning("from syslog")
+	s.Info("I am 98 handcup.")
 
-		s.Emerg("log test")
-	*/
 }
