@@ -59,7 +59,7 @@ func handleWrite(conn net.Conn, idx int, wg *sync.WaitGroup) error {
 
 	_, err := conn.Write([]byte("hello " + strconv.Itoa(idx) + "\n"))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("W: ", err)
 		return err
 	}
 
@@ -72,7 +72,7 @@ func handleRead(conn net.Conn, wg *sync.WaitGroup) error {
 	// for i := 1; i <= 10; i++ {
 	_, err := reader.ReadString(byte('\n'))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("R: ", err)
 		return err
 	}
 	// fmt.Print(line)
