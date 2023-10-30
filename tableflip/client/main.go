@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"math/rand"
 	"net"
 	"os"
 	"strconv"
@@ -28,7 +27,7 @@ var (
 // short lived socket has no requirement for zero down time upgrade.
 func main() {
 	flag.Parse()
-	rand.Seed(42)
+	// rand.Seed(42)
 	// var wg sync.WaitGroup
 
 	// short connection

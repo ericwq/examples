@@ -10,6 +10,8 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+tableflip/client/client
+tableflip/demo
 
 # Dependency directories (remove the comment below to include it)
 neovim/NvChad/

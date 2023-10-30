@@ -168,6 +168,7 @@ ReadLoop:
 			msg := strings.ReplaceAll(string(buf), "\n", "")
 			conn.Write(buf)
 			log.Printf("receive message from [%s]:[%s]", conn.RemoteAddr().String(), msg)
+			// log.Printf("receive message from [%s]:[%s - modified]", conn.RemoteAddr().String(), msg)
 		}
 	}
 	log.Printf("done w/ message from [%s]", conn.RemoteAddr().String())
