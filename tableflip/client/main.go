@@ -38,7 +38,6 @@ func main() {
 				fmt.Println("Error connecting:", err)
 				os.Exit(1)
 			}
-			defer conn.Close()
 			// fmt.Println("Connecting to " + *host + ":" + *port)
 
 			// wg.Add(1)
@@ -47,6 +46,7 @@ func main() {
 				time.Sleep(time.Millisecond * 1)
 				handleRead(conn, nil)
 			}
+			conn.Close()
 		}
 		// wg.Wait()
 	} else {
