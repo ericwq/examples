@@ -12,9 +12,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("got syslog")
 
 	msg := fmt.Sprintf("syslog from pid=%d", os.Getpid())
 	s.Info(msg)
+	s.Emerg("valar morghulis")
 
 	// the following is the result of the above log
 	//

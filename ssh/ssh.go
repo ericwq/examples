@@ -2,12 +2,19 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/crypto/ssh"
 	"net"
+	"runtime"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 )
 
 func main() {
+	// numCPU := runtime.NumCPU()
+	// fmt.Printf("NumCPU=%d\n", numCPU)
+	// runtime.GOMAXPROCS(numCPU / 2)
+	runtime.GOMAXPROCS(4)
+
 	user := "ide"
 	password := "password"
 	host := "localhost"
