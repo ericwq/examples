@@ -94,7 +94,7 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 
 ```sh
 % ssh root@localhost
-# apk add build-base autoconf automake gzip libtool ncurses-dev openssl-dev>3 perl-dev perl-io-tty protobuf-dev zlib-dev perl-doc
+# apk add build-base autoconf automake gzip libtool ncurses-dev openssl-dev perl-dev perl-io-tty protobuf-dev zlib-dev perl-doc
 ```
 
 switch to the ide user of `nvide`.
