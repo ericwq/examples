@@ -52,18 +52,18 @@ The transport layer synchronizes the contents of the local state to the remote h
 [st - simple terminal project](https://st.suckless.org/), a c project, adding dependency packages with root privilege.
 
 ```sh
-% ssh root@localhost
+ssh root@localhost
 # apk add ncurses-terminfo-base fontconfig-dev freetype-dev libx11-dev libxext-dev libxft-dev
 ```
 
 switch to the ide user of `nvide`.
 
 ```sh
-% ssh ide@localhost
-% git clone https://git.suckless.org/st
-% cd st
-% make clean
-% bear -- make st
+ssh ide@localhost
+git clone https://git.suckless.org/st
+cd st
+make clean
+bear -- make st
 ```
 
 now you can check the source code of `st` via [nvide](https://github.com/ericwq/nvide).
@@ -73,19 +73,19 @@ now you can check the source code of `st` via [nvide](https://github.com/ericwq/
 [mosh 1.3.2 - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege.
 
 ```sh
-% ssh root@localhost
-# apk add ncurses-dev zlib-dev openssl-dev perl-dev perl-io-tty protobuf-dev automake autoconf libtool gzip
+ssh root@localhost
+apk add ncurses-dev zlib-dev openssl-dev perl-dev perl-io-tty protobuf-dev automake autoconf libtool gzip
 ```
 
 switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https://mosh.org/mosh-1.3.2.tar.gz)
 
 ```sh
-% ssh ide@localhost
-% curl -O https://mosh.org/mosh-1.3.2.tar.gz
-% tar xvzf mosh-1.3.2.tar.gz
-% cd mosh-1.3.2
-% ./configure
-% bear -- make
+ssh ide@localhost
+curl -O https://mosh.org/mosh-1.3.2.tar.gz
+tar xvzf mosh-1.3.2.tar.gz
+cd mosh-1.3.2
+./configure
+bear -- make
 ```
 
 ### mosh 1.4
@@ -93,19 +93,19 @@ switch to the ide user of `nvide`. Download mosh from [mosh-1.3.2.tar.gz](https:
 [mosh 1.4 - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege. Note the following script only works on `alpine:3.18`. `alpine:edge` will cause protobuf compile problem.
 
 ```sh
-% ssh root@localhost
-# apk add build-base autoconf automake gzip libtool ncurses-dev openssl-dev perl-dev perl-io-tty protobuf-dev zlib-dev perl-doc
+ssh root@localhost
+apk add build-base autoconf automake gzip libtool ncurses-dev openssl-dev perl-dev perl-io-tty protobuf-dev zlib-dev perl-doc bear
 ```
 
 switch to the ide user of `nvide`.
 
 ```sh
-% ssh ide@localhost
-% git clone https://github.com/mobile-shell/mosh.git
-% cd mosh
-% ./autogen.sh
-% ./configure
-% bear -- make
+ssh ide@localhost
+git clone https://github.com/mobile-shell/mosh.git
+cd mosh
+./autogen.sh
+./configure
+bear -- make
 ```
 
 ### zutty
@@ -113,17 +113,17 @@ switch to the ide user of `nvide`.
 [zutty project](https://github.com/tomszilagyi/zutty), terminal emulator rendering through OpenGL ES Compute Shaders]
 
 ```sh
-% ssh root@localhost
-% apk add libxmu-dev mesa-dev freetype-dev
+ssh root@localhost
+apk add libxmu-dev mesa-dev freetype-dev
 ```
 
 switch to the ide user of `nvide`.
 
 ```sh
-% ssh ide@localhost
-% git clone https://github.com/tomszilagyi/zutty.git
-% cd zutty
-% curl -O https://raw.githubusercontent.com/socrocket/core/master/core/waf/clang_compilation_database.py
+ssh ide@localhost
+git clone https://github.com/tomszilagyi/zutty.git
+cd zutty
+curl -O https://raw.githubusercontent.com/socrocket/core/master/core/waf/clang_compilation_database.py
 ```
 
 Please skip this step. It doesn't work as expected.
@@ -141,9 +141,9 @@ def configure(conf):
 run the following commands. Note the place of `build/compile_commands.json`.
 
 ```sh
-% ./waf distclean
-% ./waf configure
-% bear -- ./waf
+./waf distclean
+./waf configure
+bear -- ./waf
 ```
 
 ### utmps
@@ -151,18 +151,18 @@ run the following commands. Note the place of `build/compile_commands.json`.
 [utmps](https://skarnet.org/software/utmps/), a C project, adding dependency packages with root privilege.
 
 ```sh
-% ssh root@localhost
-% apk add skalibs-dev
+ssh root@localhost
+apk add skalibs-dev utmps-dev
 ```
 switch to the ide user of `nvide`.
 
 ```sh
-% ssh ide@localhost
-% git clone https://github.com/tomszilagyi/zutty.git
-% git clone git://git.skarnet.org/utmps
-% cd utmps
-% ./configure
-% bear -- make
+ssh ide@localhost
+git clone https://github.com/tomszilagyi/zutty.git
+git clone git://git.skarnet.org/utmps
+cd utmps
+./configure
+bear -- make
 ```
 
 ## reference doc
