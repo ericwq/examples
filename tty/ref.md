@@ -110,7 +110,7 @@ bear -- make
 
 ### zutty
 
-[zutty project](https://github.com/tomszilagyi/zutty), terminal emulator rendering through OpenGL ES Compute Shaders]
+[zutty project](https://git.hq.sig7.se/zutty.git), terminal emulator rendering through OpenGL ES Compute Shaders]
 
 ```sh
 ssh root@localhost
