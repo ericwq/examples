@@ -68,6 +68,20 @@ bear -- make st
 
 now you can check the source code of `st` via [nvide](https://github.com/ericwq/nvide).
 
+### foot
+[foot](https://codeberg.org/dnkl/foot), A fast, lightweight and minimalistic Wayland terminal emulator.
+
+```sh
+ssh root@localhost
+apk add meson cmake tllist-dev fcft-dev wayland-dev libxkbcommon-dev wayland-protocols
+```
+switch to the ide user of `nvide`.
+```sh
+sssh ide@localhost
+git clone https://codeberg.org/dnkl/foot.git
+cd foot
+meson build
+```
 ### mosh
 
 [mosh 1.3.2 - mobile shell project](https://mosh.org/), a C++ project, adding dependency packages with root privilege.
